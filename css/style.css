@@ -595,6 +595,25 @@ button { cursor: pointer; border: none; background: none; font-family: var(--fon
 /* Error state on picker */
 .wb-vehicle-picker.wb-picker-error { outline: 2px solid #EF4444; border-radius: var(--radius-sm); }
 
+/* 3-vehicle layout – cards stretch equally across the full row */
+.wb-vehicle-picker--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.wb-vehicle-picker--3 .wb-vehicle-opt {
+  padding: 14px 8px 12px;
+}
+.wb-vehicle-picker--3 .wbv-icon {
+  width: 44px;
+  height: 44px;
+  font-size: 1.1rem;
+}
+.wb-vehicle-picker--3 .wbv-name {
+  font-size: 0.82rem;
+}
+.wb-vehicle-picker--3 .wbv-price {
+  font-size: 0.72rem;
+}
+
 /* ---- Submit button ---- */
 .btn-wa-submit {
   background: linear-gradient(135deg, #25D366 0%, #128C7E 100%) !important;
@@ -794,9 +813,11 @@ button { cursor: pointer; border: none; background: none; font-family: var(--fon
 [data-theme="dark"] .section-services { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
 
 .services-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+  align-items: stretch;
 }
 
 .service-card {
@@ -805,6 +826,11 @@ button { cursor: pointer; border: none; background: none; font-family: var(--fon
   position: relative;
   overflow: hidden;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 0 1 260px;
+  max-width: 320px;
 }
 .service-card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
@@ -950,6 +976,187 @@ button { cursor: pointer; border: none; background: none; font-family: var(--fon
 
 .swiper-pagination-bullet { background: var(--text-muted); opacity: 0.5; }
 .swiper-pagination-bullet-active { background: var(--primary) !important; opacity: 1; width: 20px; border-radius: 4px; }
+
+/* ============================================================
+   TARIFF SECTION
+   ============================================================ */
+.section-tariff {
+  padding: 100px 0;
+  background: var(--gradient-soft);
+}
+[data-theme="dark"] .section-tariff {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+/* Two-card side-by-side layout */
+.tariff-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+/* Individual tariff card */
+.tariff-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Card header */
+.tariff-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 28px 20px;
+  background: linear-gradient(135deg, var(--secondary) 0%, #1e293b 100%);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.tariff-header-rt {
+  background: linear-gradient(135deg, #1a2540 0%, #2563EB 100%);
+}
+
+.tariff-header-icon {
+  width: 48px; height: 48px; min-width: 48px;
+  background: rgba(255,193,7,0.15);
+  border: 1.5px solid rgba(255,193,7,0.3);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--primary); font-size: 1.2rem;
+}
+.rt-icon {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.tariff-card-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 4px;
+}
+.tariff-card-header p {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.55);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Table wrapper */
+.tariff-table-wrap {
+  padding: 0 4px;
+}
+
+.tariff-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Table head */
+.tariff-table thead tr {
+  background: var(--secondary);
+}
+[data-theme="dark"] .tariff-table thead tr {
+  background: rgba(255,255,255,0.04);
+}
+.tariff-table thead th {
+  padding: 13px 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  text-align: left;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.tariff-table thead th i {
+  color: var(--primary);
+}
+
+/* Table body rows */
+.tariff-table tbody tr {
+  border-bottom: 1px solid rgba(17,24,39,0.07);
+  transition: var(--transition);
+}
+[data-theme="dark"] .tariff-table tbody tr {
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+.tariff-table tbody tr:last-child { border-bottom: none; }
+.tariff-table tbody tr:hover { background: rgba(255,193,7,0.04); }
+
+.tariff-table tbody tr.tariff-alt {
+  background: rgba(17,24,39,0.025);
+}
+[data-theme="dark"] .tariff-table tbody tr.tariff-alt {
+  background: rgba(255,255,255,0.025);
+}
+.tariff-table tbody tr.tariff-alt:hover { background: rgba(255,193,7,0.06); }
+
+.tariff-table tbody td {
+  padding: 14px 20px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+/* Vehicle name with icon */
+.tariff-vehicle-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.tariff-veh-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, rgba(255,193,7,0.12), rgba(37,99,235,0.08));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--primary); font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* Rate pill */
+.tariff-rate {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+}
+[data-theme="dark"] .tariff-rate { color: var(--primary); }
+.tariff-rate span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Allowance badge */
+.tariff-allowance {
+  display: inline-block;
+  background: rgba(16,185,129,0.1);
+  border: 1px solid rgba(16,185,129,0.2);
+  color: #059669;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+}
+[data-theme="dark"] .tariff-allowance { color: #34D399; background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.2); }
+
+/* Note row at bottom */
+.tariff-note {
+  padding: 12px 20px 18px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  border-top: 1px solid rgba(17,24,39,0.07);
+  line-height: 1.5;
+}
+[data-theme="dark"] .tariff-note { border-top-color: rgba(255,255,255,0.06); }
+.tariff-note i { color: var(--accent); margin-top: 2px; flex-shrink: 0; }
 
 /* ============================================================
    ROUTES SECTION
