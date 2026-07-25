@@ -166,10 +166,18 @@ button { cursor: pointer; border: none; background: none; font-family: var(--fon
 .brand-accent { color: var(--primary); }
 
 /* Collapse wrapper – logo left | links centre | actions right */
-.navbar-collapse {
-  display: flex !important;
-  align-items: center;
-  width: 100%;
+/* Do NOT force display:flex here — Bootstrap needs to control visibility on mobile */
+.navbar-collapse.show,
+.navbar-collapse.collapsing {
+  /* mobile: handled by Bootstrap JS — no override needed */
+}
+
+@media (min-width: 992px) {
+  .navbar-collapse {
+    display: flex !important;
+    align-items: center;
+    width: 100%;
+  }
 }
 
 /* Nav links – centred */

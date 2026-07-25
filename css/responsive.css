@@ -49,7 +49,7 @@
 @media (max-width: 991px) {
   :root { --nav-h: 64px; }
 
-  /* Navbar mobile – stacked dropdown */
+  /* Navbar mobile – Bootstrap controls show/hide, we only style the open state */
   #navMenu {
     background: rgba(255,255,255,0.97);
     backdrop-filter: blur(20px);
@@ -58,13 +58,15 @@
     margin-top: 8px;
     border: 1px solid rgba(255,193,7,0.15);
     box-shadow: var(--shadow-lg);
-    /* Override desktop flex */
-    flex-direction: column !important;
-    align-items: stretch !important;
   }
   [data-theme="dark"] #navMenu {
     background: rgba(15,23,42,0.98);
     border-color: rgba(255,255,255,0.08);
+  }
+  /* When open, stack items vertically */
+  #navMenu.show,
+  #navMenu.collapsing {
+    display: block !important;
   }
   /* Nav links stack vertically */
   .navbar-nav {
