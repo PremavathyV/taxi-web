@@ -1,4 +1,4 @@
-/**
+﻿/**
  * OUTSTATION – Booking & Contact Form Handler
  * Handles form validation, submission, and UI feedback
  */
@@ -11,27 +11,47 @@
 const bookingForm = document.getElementById('bookingForm');
 
 if (bookingForm) {
-  bookingForm.addEventListener('submit', function (e) {
+  bookingForm.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (!validateForm(this)) return;
 
     const btn = this.querySelector('.btn-book-submit');
     const originalHTML = btn.innerHTML;
+    const fields = Array.from(this.querySelectorAll('input, select'));
 
-    // Loading state
+    const payload = {
+      name: 'Guest Booking',
+      mobile: fields[5]?.value || '',
+      pickup: fields[0]?.value || '',
+      drop: fields[1]?.value || '',
+      journeyDate: fields[2]?.value || '',
+      pickupTime: fields[3]?.value || '',
+      vehicleType: fields[4]?.value || '',
+    };
+
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i> Processing…';
     btn.disabled = true;
 
-    // Simulate API call
-    setTimeout(() => {
-      btn.innerHTML = '<i class="fas fa-check me-2"></i> Booking Confirmed!';
+    try {
+      const response = await fetch('http://localhost:5000/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Booking failed');
+      }
+
+      btn.innerHTML = '<i class="fas fa-check me-2"></i> Booking Submitted';
       btn.style.background = 'linear-gradient(135deg, #10B981, #059669)';
 
       if (window.showToast) {
-        window.showToast('🎉 Booking confirmed! Driver details sent to your mobile.');
+        window.showToast('✅ Booking submitted successfully. We will contact you shortly.');
       }
 
-      // Reset after 4 seconds
       setTimeout(() => {
         btn.innerHTML = originalHTML;
         btn.disabled = false;
@@ -39,7 +59,15 @@ if (bookingForm) {
         bookingForm.reset();
         clearFormErrors(bookingForm);
       }, 4000);
-    }, 1800);
+    } catch (error) {
+      btn.innerHTML = originalHTML;
+      btn.disabled = false;
+      btn.style.background = '';
+
+      if (window.showToast) {
+        window.showToast(error.message || 'Booking failed. Please try again.');
+      }
+    }
   });
 
   // Real-time validation
@@ -437,7 +465,7 @@ if (bookingForm) {
      ══════════════════════════════════════════════════════════ */
   let isProcessing = false;  // multiple-submission guard
 
-  form.addEventListener('submit', function (e) {
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
     if (isProcessing) return;        // prevent double submit
     if (!wbValidateAll()) return;
@@ -489,71 +517,77 @@ if (bookingForm) {
       void overlay.offsetWidth;
       overlay.classList.add('wb-overlay-in');
 
-      /* ── Build WhatsApp message ──────────────────────────── */
-      const msg = [
-        '🚕 *OUTSTATION – New Taxi Booking Request*',
-        '',
-        `👤 *Name:*     ${nameVal}`,
-        `📱 *Mobile:*   +91 ${mobileVal}`,
-        `📍 *Pickup:*   ${pickupVal}`,
-        `🏁 *Drop:*     ${dropVal}`,
-        `📅 *Date:*     ${formattedDate}`,
-        `🕐 *Time:*     ${formattedTime}`,
-        `🚗 *Vehicle:*  ${vehicleLabel}`,
-        '',
-        '✅ Please confirm availability and share the fare.',
-      ].join('\n');
+      const payload = {
+        name: nameVal,
+        mobile: mobileVal,
+        pickup: pickupVal,
+        drop: dropVal,
+        journeyDate: fDate.value,
+        pickupTime: fTime.value,
+        vehicleType: vehicleLabel,
+      };
 
-      const waURL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+      try {
+        const response = await fetch('http://localhost:5000/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
 
-      /* ── Open WhatsApp after animation completes (1.8 s) ─── */
-      setTimeout(() => {
-        window.open(waURL, '_blank', 'noopener,noreferrer');
+        const result = await response.json();
 
-        if (window.showToast) {
-          window.showToast('✅ Opening WhatsApp to confirm your booking!');
+        if (!response.ok) {
+          throw new Error(result.message || 'Booking request failed.');
         }
 
-        /* ── Close overlay + reset form after another 1.5 s ── */
-        setTimeout(() => {
-          overlay.classList.remove('wb-overlay-in');
-          setTimeout(() => overlay.setAttribute('hidden', ''), 350);
+        if (window.showToast) {
+          window.showToast('✅ Booking submitted successfully. We will contact you shortly.');
+        }
+      } catch (error) {
+        if (window.showToast) {
+          window.showToast(error.message || 'Booking request failed.');
+        }
+      }
 
-          // Reset button
-          submitBtn.querySelector('.wbBtn-inner').innerHTML = originalInner;
-          submitBtn.disabled = false;
-          isProcessing = false;
+      /* ── Close overlay + reset form after another 1.5 s ── */
+      setTimeout(() => {
+        overlay.classList.remove('wb-overlay-in');
+        setTimeout(() => overlay.setAttribute('hidden', ''), 350);
 
-          // Reset form fields
-          form.reset();
-          setMinDate();
+        // Reset button
+        submitBtn.querySelector('.wbBtn-inner').innerHTML = originalInner;
+        submitBtn.disabled = false;
+        isProcessing = false;
 
-          // Reset vehicle picker
-          if (vehiclePicker) {
-            vehiclePicker.querySelectorAll('.wb-vehicle-opt').forEach(b => {
-              b.classList.remove('selected');
-              b.setAttribute('aria-checked', 'false');
-            });
-          }
+        // Reset form fields
+        form.reset();
+        setMinDate();
 
-          // Reset name counter
-          if (nameCounter) {
-            nameCounter.textContent = '0 / 50';
-            nameCounter.className = 'wb-char-counter';
-          }
+        // Reset vehicle picker
+        if (vehiclePicker) {
+          vehiclePicker.querySelectorAll('.wb-vehicle-opt').forEach(b => {
+            b.classList.remove('selected');
+            b.setAttribute('aria-checked', 'false');
+          });
+        }
 
-          // Reset mobile status
-          if (mobileStatus) {
-            mobileStatus.innerHTML = '';
-            mobileStatus.className = 'wb-mobile-status';
-          }
+        // Reset name counter
+        if (nameCounter) {
+          nameCounter.textContent = '0 / 50';
+          nameCounter.className = 'wb-char-counter';
+        }
 
-          // Clear all field errors
-          [fName, fMobile, fPickup, fDrop, fDate, fTime, fVehicle]
-            .forEach(wbClearError);
+        // Reset mobile status
+        if (mobileStatus) {
+          mobileStatus.innerHTML = '';
+          mobileStatus.className = 'wb-mobile-status';
+        }
 
-        }, 1500);
-      }, 1800);
+        // Clear all field errors
+        [fName, fMobile, fPickup, fDrop, fDate, fTime, fVehicle]
+          .forEach(wbClearError);
+
+      }, 1500);
 
     }, 700); // brief spinner → overlay delay
   });
@@ -694,3 +728,4 @@ if (bookingForm) {
   }
 
 }()); // end IIFE
+

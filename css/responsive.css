@@ -49,23 +49,48 @@
 @media (max-width: 991px) {
   :root { --nav-h: 64px; }
 
-  /* Navbar */
+  /* Navbar mobile – stacked dropdown */
   #navMenu {
-    background: rgba(255,255,255,0.96);
+    background: rgba(255,255,255,0.97);
     backdrop-filter: blur(20px);
     border-radius: var(--radius);
-    padding: 20px;
+    padding: 16px 20px 20px;
     margin-top: 8px;
     border: 1px solid rgba(255,193,7,0.15);
     box-shadow: var(--shadow-lg);
+    /* Override desktop flex */
+    flex-direction: column !important;
+    align-items: stretch !important;
   }
   [data-theme="dark"] #navMenu {
-    background: rgba(15,23,42,0.97);
+    background: rgba(15,23,42,0.98);
     border-color: rgba(255,255,255,0.08);
   }
-  .navbar-nav { flex-direction: column; gap: 4px !important; }
-  .nav-actions { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.07); }
+  /* Nav links stack vertically */
+  .navbar-nav {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+    margin: 0 0 8px !important;
+    width: 100%;
+  }
+  .navbar-nav .nav-link {
+    width: 100%;
+    padding: 9px 12px !important;
+    font-size: 0.9rem !important;
+  }
+  /* Actions row */
+  .nav-actions {
+    margin-left: 0 !important;
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,0,0,0.07);
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
   [data-theme="dark"] .nav-actions { border-color: rgba(255,255,255,0.07); }
+  .btn-book-nav { font-size: 0.85rem !important; padding: 9px 20px !important; }
 
   /* Hero */
   .hero-section { padding: calc(var(--nav-h) + 32px) 0 64px; }
@@ -110,7 +135,16 @@
   .section-about, .section-services, .section-why,
   .section-fleet, .section-routes, .section-process,
   .section-reviews, .section-faq, .section-app,
-  .section-cta, .section-contact { padding: 72px 0; }
+  .section-tariff, .section-cta, .section-contact { padding: 72px 0; }
+
+  /* Tariff – stack to single column */
+  .tariff-wrap { grid-template-columns: 1fr; gap: 20px; }
+  .tariff-card-header { padding: 18px 20px 16px; gap: 12px; }
+  .tariff-header-icon { width: 40px; height: 40px; min-width: 40px; font-size: 1rem; }
+  .tariff-card-header h3 { font-size: 0.95rem; }
+  .tariff-table thead th,
+  .tariff-table tbody td { padding: 11px 14px; font-size: 0.8rem; }
+  .tariff-rate { font-size: 0.92rem; }
 
   .about-features { grid-template-columns: 1fr; }
   .about-img-main img { height: 320px; }
