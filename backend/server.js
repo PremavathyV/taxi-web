@@ -54,11 +54,11 @@ app.use('/api', rateLimit({
 
 // Stricter limit for public booking + contact
 app.use('/api/bookings', rateLimit({
-  windowMs: 15 * 60 * 1000, max: 15,
-  message: { success: false, message: 'Too many booking attempts.' },
+  windowMs: 15 * 60 * 1000, max: 50,
+  message: { success: false, message: 'Too many booking attempts. Please try again later.' },
 }));
 app.use('/api/contacts', rateLimit({
-  windowMs: 15 * 60 * 1000, max: 10,
+  windowMs: 15 * 60 * 1000, max: 30,
   message: { success: false, message: 'Too many contact submissions.' },
 }));
 
