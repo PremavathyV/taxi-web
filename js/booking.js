@@ -9,7 +9,7 @@
    Local (served via backend):  ''
    After Render deploy, change to: 'https://YOUR-APP.onrender.com'
    ─────────────────────────────────────────────────────────── */
-const API_BASE = '';
+const API_BASE = 'https://taxi-web-mrk9.onrender.com';
 
 /* ══════════════════════════════════════════════════════
    SHARED HELPERS

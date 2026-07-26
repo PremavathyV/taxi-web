@@ -33,10 +33,16 @@ const app = express();
    ═══════════════════════════════════════════════════════════ */
 app.use(helmet({ contentSecurityPolicy: false })); // CSP off so admin HTML loads CDN assets
 app.use(cors({
-  origin:       [process.env.CLIENT_URL || '*'],
-  methods:      ['GET','POST','PATCH','DELETE','OPTIONS'],
+  origin: [
+    'https://taxi-web-q2sj.vercel.app',
+    'https://taxi-web-mrk9.onrender.com',
+    'http://localhost:5000',
+    'http://localhost:3000',
+    process.env.CLIENT_URL,
+  ].filter(Boolean),
+  methods:        ['GET','POST','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
-  credentials:  true,
+  credentials:    true,
 }));
 
 // Global rate limit
@@ -64,17 +70,22 @@ app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
 /* ═══════════════════════════════════════════════════════════
-   SERVE FRONTEND (static HTML from project root)
-   ═══════════════════════════════════════════════════════════ */
-app.use(express.static(path.join(__dirname, '..')));
-
-/* ═══════════════════════════════════════════════════════════
-   SERVE ADMIN DASHBOARD (static HTML)
+   SERVE ADMIN DASHBOARD
    ═══════════════════════════════════════════════════════════ */
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
-// Catch-all for admin SPA navigation
-app.get('/admin*', (req, res) => {
+app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'index.html'));
+});
+app.get('/admin/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'index.html'));
+});
+
+/* ═══════════════════════════════════════════════════════════
+   SERVE FRONTEND (customer website)
+   ═══════════════════════════════════════════════════════════ */
+app.use(express.static(path.join(__dirname, '..')));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
 /* ═══════════════════════════════════════════════════════════
