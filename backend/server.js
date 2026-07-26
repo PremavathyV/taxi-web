@@ -64,6 +64,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
 /* ═══════════════════════════════════════════════════════════
+   SERVE FRONTEND (static HTML from project root)
+   ═══════════════════════════════════════════════════════════ */
+app.use(express.static(path.join(__dirname, '..')));
+
+/* ═══════════════════════════════════════════════════════════
    SERVE ADMIN DASHBOARD (static HTML)
    ═══════════════════════════════════════════════════════════ */
 app.use('/admin', express.static(path.join(__dirname, 'admin')));

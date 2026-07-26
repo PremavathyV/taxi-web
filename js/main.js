@@ -226,9 +226,9 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
       // Close mobile nav if open
       const navCollapse = document.getElementById('navMenu');
-      if (navCollapse.classList.contains('show')) {
-        const bsCollapse = bootstrap.Collapse.getInstance(navCollapse);
-        if (bsCollapse) bsCollapse.hide();
+      if (navCollapse && navCollapse.classList.contains('show')) {
+        const bsCollapse = bootstrap.Collapse.getOrCreateInstance(navCollapse);
+        bsCollapse.hide();
       }
     }
   });

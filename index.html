@@ -128,34 +128,34 @@
         <form class="booking-form" id="bookingForm" novalidate>
           <div class="form-group-custom">
             <label><i class="fas fa-map-marker-alt"></i> Pickup City</label>
-            <input type="text" class="form-input-custom" placeholder="Enter pickup city" required />
+            <input type="text" id="hbPickup" class="form-input-custom" placeholder="Enter pickup city" required />
           </div>
           <div class="form-group-custom">
             <label><i class="fas fa-flag-checkered"></i> Destination City</label>
-            <input type="text" class="form-input-custom" placeholder="Enter destination" required />
+            <input type="text" id="hbDrop" class="form-input-custom" placeholder="Enter destination" required />
           </div>
           <div class="form-row-two">
             <div class="form-group-custom">
               <label><i class="far fa-calendar-alt"></i> Journey Date</label>
-              <input type="date" class="form-input-custom" required />
+              <input type="date" id="hbDate" class="form-input-custom" required />
             </div>
             <div class="form-group-custom">
               <label><i class="far fa-clock"></i> Pickup Time</label>
-              <input type="time" class="form-input-custom" required />
+              <input type="time" id="hbTime" class="form-input-custom" required />
             </div>
           </div>
           <div class="form-group-custom">
             <label><i class="fas fa-car"></i> Vehicle Type</label>
-            <select class="form-input-custom">
+            <select id="hbVehicle" class="form-input-custom">
               <option value="">Select Vehicle</option>
-              <option>Sedan (Toyota Etios)</option>
-              <option>SUV (Mahindra XUV)</option>
-              <option>Innova</option>
+              <option value="Sedan (Toyota Etios / Dzire)">Sedan (Toyota Etios)</option>
+              <option value="SUV (Mahindra XUV / Ertiga)">SUV (Mahindra XUV)</option>
+              <option value="Innova">Innova</option>
             </select>
           </div>
           <div class="form-group-custom">
             <label><i class="fas fa-mobile-alt"></i> Mobile Number</label>
-            <input type="tel" class="form-input-custom" placeholder="+91 76391 03970" required />
+            <input type="tel" id="hbMobile" class="form-input-custom" placeholder="+91 76391 03970" required />
           </div>
           <button type="submit" class="btn btn-book-submit">Book Taxi Now <i class="fas fa-arrow-right ms-2"></i></button>
         </form>
