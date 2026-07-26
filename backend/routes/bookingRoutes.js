@@ -1,39 +1,35 @@
 /**
  * routes/bookingRoutes.js
- *
- * Public:
- *   POST   /api/bookings          – create booking
- *
- * Protected (admin JWT required):
- *   GET    /api/bookings          – list all bookings
- *   GET    /api/bookings/:id      – single booking
- *   PATCH  /api/bookings/:id      – update status / note
- *   DELETE /api/bookings/:id      – delete booking
+ * Public:    POST   /api/bookings
+ * Protected: GET    /api/bookings
+ *            GET    /api/bookings/reports
+ *            GET    /api/bookings/:id
+ *            PATCH  /api/bookings/:id
+ *            PATCH  /api/bookings/:id/assign-driver
+ *            DELETE /api/bookings/:id
  */
 
-const express  = require('express');
-const router   = express.Router();
+const express = require('express');
+const router  = express.Router();
 
 const {
-  createBooking,
-  getAllBookings,
-  getBookingById,
-  updateBooking,
-  deleteBooking,
+  createBooking, getAllBookings, getBookingById,
+  updateBooking, assignDriver, deleteBooking, getReports,
 } = require('../controllers/bookingController');
 
-const { protect }       = require('../middleware/auth');
-const { bookingRules }  = require('../middleware/validate');
+const { protect }      = require('../middleware/auth');
+const { bookingRules } = require('../middleware/validate');
 
-// ── Public ──────────────────────────────────────────────────
+// Public
 router.post('/', bookingRules, createBooking);
 
-// ── Protected (admin only) ───────────────────────────────────
-router.use(protect); // all routes below require JWT
-
-router.get('/',     getAllBookings);
-router.get('/:id',  getBookingById);
-router.patch('/:id', updateBooking);
+// Protected
+router.use(protect);
+router.get('/reports', getReports);
+router.get('/',       getAllBookings);
+router.get('/:id',    getBookingById);
+router.patch('/:id/assign-driver', assignDriver);
+router.patch('/:id',  updateBooking);
 router.delete('/:id', deleteBooking);
 
 module.exports = router;

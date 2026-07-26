@@ -1,114 +1,108 @@
 /**
  * server.js
- * Sundara Travels – Express API entry point
+ * Sundara Travels – Express API  (MongoDB + Mongoose)
  */
 
 'use strict';
-
 require('dotenv').config();
 
-const express      = require('express');
-const helmet       = require('helmet');
-const cors         = require('cors');
-const mongoSanitize = require('express-mongo-sanitize');
-const rateLimit    = require('express-rate-limit');
+const express        = require('express');
+const helmet         = require('helmet');
+const cors           = require('cors');
+const mongoSanitize  = require('express-mongo-sanitize');
+const rateLimit      = require('express-rate-limit');
+const path           = require('path');
 
 const connectDB      = require('./config/db');
-const bookingRoutes  = require('./routes/bookingRoutes');
-const adminRoutes    = require('./routes/adminRoutes');
 const errorHandler   = require('./middleware/errorHandler');
 
-// ── Connect to MongoDB ───────────────────────────────────────
+/* ── Routes ── */
+const adminRoutes    = require('./routes/adminRoutes');
+const bookingRoutes  = require('./routes/bookingRoutes');
+const driverRoutes   = require('./routes/driverRoutes');
+const paymentRoutes  = require('./routes/paymentRoutes');
+const contactRoutes  = require('./routes/contactRoutes');
+
+// ── Connect MongoDB ──────────────────────────────────────────
 connectDB();
 
 const app = express();
 
 /* ═══════════════════════════════════════════════════════════
-   SECURITY MIDDLEWARE
+   SECURITY
    ═══════════════════════════════════════════════════════════ */
-
-// Set security HTTP headers
-app.use(helmet());
-
-// Enable CORS for frontend origin
+app.use(helmet({ contentSecurityPolicy: false })); // CSP off so admin HTML loads CDN assets
 app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
+  origin:       [process.env.CLIENT_URL || '*'],
+  methods:      ['GET','POST','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  credentials:  true,
 }));
 
-// Rate limiting – 100 requests per 15 minutes per IP
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders:   false,
-  message: {
-    success: false,
-    message: 'Too many requests from this IP. Please try again after 15 minutes.',
-  },
-});
-app.use('/api', limiter);
+// Global rate limit
+app.use('/api', rateLimit({
+  windowMs: 15 * 60 * 1000, max: 200,
+  standardHeaders: true, legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Try again later.' },
+}));
 
-// Stricter limit for booking creation – 10 per 15 min per IP
-const bookingLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: {
-    success: false,
-    message: 'Too many booking attempts. Please try again later.',
-  },
-});
-app.use('/api/bookings', bookingLimiter);
+// Stricter limit for public booking + contact
+app.use('/api/bookings', rateLimit({
+  windowMs: 15 * 60 * 1000, max: 15,
+  message: { success: false, message: 'Too many booking attempts.' },
+}));
+app.use('/api/contacts', rateLimit({
+  windowMs: 15 * 60 * 1000, max: 10,
+  message: { success: false, message: 'Too many contact submissions.' },
+}));
 
 /* ═══════════════════════════════════════════════════════════
-   BODY PARSING & SANITISATION
+   BODY PARSING
    ═══════════════════════════════════════════════════════════ */
-
-app.use(express.json({ limit: '10kb' }));          // JSON body parser
-app.use(express.urlencoded({ extended: true }));    // URL-encoded body
-app.use(mongoSanitize());                           // Prevent NoSQL injection
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(mongoSanitize());
 
 /* ═══════════════════════════════════════════════════════════
-   ROUTES
+   SERVE ADMIN DASHBOARD (static HTML)
    ═══════════════════════════════════════════════════════════ */
+app.use('/admin', express.static(path.join(__dirname, 'admin')));
+// Catch-all for admin SPA navigation
+app.get('/admin*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'index.html'));
+});
 
-// Health check
+/* ═══════════════════════════════════════════════════════════
+   API ROUTES
+   ═══════════════════════════════════════════════════════════ */
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Sundara Travels API is running ✅',
-    env:     process.env.NODE_ENV,
-  });
+  res.json({ success: true, message: 'Sundara Travels API ✅', env: process.env.NODE_ENV });
 });
 
-app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin',    adminRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/drivers',  driverRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/contacts', contactRoutes);
 
-// 404 handler for unknown routes
+// 404
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route not found: ${req.method} ${req.originalUrl}`,
-  });
+  res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 
 /* ═══════════════════════════════════════════════════════════
-   GLOBAL ERROR HANDLER (must be last)
+   GLOBAL ERROR HANDLER
    ═══════════════════════════════════════════════════════════ */
 app.use(errorHandler);
 
 /* ═══════════════════════════════════════════════════════════
-   START SERVER
+   START
    ═══════════════════════════════════════════════════════════ */
-const PORT = process.env.PORT || 5000;
+const PORT   = process.env.PORT || 5000;
+const server = app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT} [${process.env.NODE_ENV}]`)
+);
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
-
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error('💥 Unhandled Rejection:', err.message);
   server.close(() => process.exit(1));

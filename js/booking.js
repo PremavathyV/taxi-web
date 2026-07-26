@@ -78,37 +78,57 @@ if (bookingForm) {
 }
 
 /* ============================================================
-   CONTACT FORM
+   CONTACT FORM  – POSTs to /api/contacts
    ============================================================ */
 const contactForm = document.getElementById('contactForm');
 
 if (contactForm) {
-  contactForm.addEventListener('submit', function (e) {
+  contactForm.addEventListener('submit', async function (e) {
     e.preventDefault();
-    if (!validateForm(this)) return;
+
+    const name    = document.getElementById('cfName')?.value.trim();
+    const phone   = document.getElementById('cfPhone')?.value.trim();
+    const email   = document.getElementById('cfEmail')?.value.trim();
+    const subject = document.getElementById('cfSubject')?.value.trim();
+    const message = document.getElementById('cfMessage')?.value.trim();
+
+    if (!name || !message) {
+      if (window.showToast) window.showToast('Please fill Name and Message fields.');
+      return;
+    }
 
     const btn = this.querySelector('.btn-book-submit');
     const originalHTML = btn.innerHTML;
-
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i> Sending…';
     btn.disabled = true;
 
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:5000/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, email, subject, message }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.message || 'Submission failed.');
+
       btn.innerHTML = '<i class="fas fa-check me-2"></i> Message Sent!';
       btn.style.background = 'linear-gradient(135deg, #10B981, #059669)';
-
-      if (window.showToast) {
-        window.showToast('✅ Message sent! We\'ll get back to you within 24 hours.');
-      }
+      if (window.showToast) window.showToast('✅ Message sent! We\'ll get back to you within 24 hours.');
 
       setTimeout(() => {
         btn.innerHTML = originalHTML;
         btn.disabled = false;
         btn.style.background = '';
         contactForm.reset();
-        clearFormErrors(contactForm);
       }, 4000);
-    }, 1800);
+
+    } catch (err) {
+      btn.innerHTML = originalHTML;
+      btn.disabled = false;
+      if (window.showToast) window.showToast('❌ ' + (err.message || 'Could not send message.'));
+    }
   });
 }
 
