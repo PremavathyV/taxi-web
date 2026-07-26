@@ -91,8 +91,17 @@ app.get('/', (req, res) => {
 /* ═══════════════════════════════════════════════════════════
    API ROUTES
    ═══════════════════════════════════════════════════════════ */
-app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Sundara Travels API ✅', env: process.env.NODE_ENV });
+app.get('/api/health', async (req, res) => {
+  const mongoose = require('mongoose');
+  const dbState  = mongoose.connection.readyState;
+  const states   = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  res.json({
+    success: true,
+    message: 'Sundara Travels API ✅',
+    env:     process.env.NODE_ENV,
+    db:      states[dbState] || 'unknown',
+    dbState,
+  });
 });
 
 app.use('/api/admin',    adminRoutes);
