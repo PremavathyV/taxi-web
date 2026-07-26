@@ -1,10 +1,15 @@
 ﻿/**
  * booking.js – Sundara Travels
  * Handles: Hero booking form, WhatsApp booking form, Contact form
- * All forms POST to /api/* (relative URLs – works locally + on deployment)
  */
 
 'use strict';
+
+/* ── API Base URL ─────────────────────────────────────────────
+   Local (served via backend):  ''
+   After Render deploy, change to: 'https://YOUR-APP.onrender.com'
+   ─────────────────────────────────────────────────────────── */
+const API_BASE = '';
 
 /* ══════════════════════════════════════════════════════
    SHARED HELPERS
@@ -61,7 +66,7 @@ function todayStr() {
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i> Booking…';
 
     try {
-      const res  = await fetch('/api/bookings', {
+      const res  = await fetch(API_BASE + '/api/bookings', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -201,7 +206,7 @@ function todayStr() {
 
     // Save to database
     try {
-      const res = await fetch('/api/bookings', {
+      const res = await fetch(API_BASE + '/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -378,7 +383,7 @@ function todayStr() {
     btn.disabled = true;
 
     try {
-      const res  = await fetch('/api/contacts', {
+      const res  = await fetch(API_BASE + '/api/contacts', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, phone, email, subject, message }),
@@ -463,3 +468,4 @@ function todayStr() {
     el.addEventListener('input', update);
   });
 }());
+
