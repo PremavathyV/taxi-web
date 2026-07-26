@@ -39,10 +39,14 @@ function todayStr() {
     const time    = (document.getElementById('hbTime')?.value   || '').trim();
     const vehicle = (document.getElementById('hbVehicle')?.value || '').trim();
     const mobile  = (document.getElementById('hbMobile')?.value  || '').replace(/\D/g, '');
+    const name    = (document.getElementById('hbName')?.value    || '').trim();
 
     // Validation
-    if (!pickup || !drop || !date || !time || !vehicle || !mobile) {
+    if (!name || !pickup || !drop || !date || !time || !vehicle || !mobile) {
       showToastMsg('❌ Please fill all fields.'); return;
+    }
+    if (name.length < 3) {
+      showToastMsg('❌ Name must be at least 3 characters.'); return;
     }
     if (!/^[6-9]\d{9}$/.test(mobile)) {
       showToastMsg('❌ Enter a valid 10-digit Indian mobile number.'); return;
@@ -61,7 +65,7 @@ function todayStr() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: 'Guest', mobile, pickup, drop,
+          name, mobile, pickup, drop,
           journeyDate: date, pickupTime: time, vehicleType: vehicle,
         }),
       });
