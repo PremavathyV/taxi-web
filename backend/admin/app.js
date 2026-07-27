@@ -12,6 +12,10 @@ let currentContactId = null;
 let currentPage      = 1;
 let refreshInterval  = null;
 
+// ALWAYS show login page first — never show dashboard until verified
+document.getElementById('authPage').style.display  = 'flex';
+document.getElementById('dashPage').style.display  = 'none';
+
 /* ══ HTTP Helpers ════════════════════════════════════════ */
 async function req(method, url, body) {
   const opts = {
@@ -129,26 +133,11 @@ function showDash() {
   }, 30000);
 }
 
-// Auto-login — verify token is still valid before skipping login
-if (TOKEN) {
-  GET('/admin/me')
-    .then(r => {
-      // Token valid — go to dashboard
-      setAdminInfo(r.data);
-      showDash();
-    })
-    .catch(() => {
-      // Token expired or invalid — force login
-      TOKEN = '';
-      localStorage.removeItem('st_admin_token');
-      document.getElementById('authPage').style.display  = 'flex';
-      document.getElementById('dashPage').style.display  = 'none';
-    });
-} else {
-  // No token — show login
-  document.getElementById('authPage').style.display  = 'flex';
-  document.getElementById('dashPage').style.display  = 'none';
-}
+// No auto-login — user must always enter credentials manually.
+// Token is used only for API calls after login.
+TOKEN = ''; localStorage.removeItem('st_admin_token');
+document.getElementById('authPage').style.display = 'flex';
+document.getElementById('dashPage').style.display = 'none';
 
 /* ══ Navigation ══════════════════════════════════════════ */
 document.querySelectorAll('[data-sec]').forEach(a => {
