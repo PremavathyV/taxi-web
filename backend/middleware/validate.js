@@ -1,4 +1,4 @@
-/**
+﻿/**
  * middleware/validate.js
  * express-validator rules for all routes
  */
@@ -49,7 +49,7 @@ const bookingRules = [
     .matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Invalid time format. Use HH:MM.'),
 
   body('vehicleType').notEmpty().withMessage('Vehicle type is required.')
-    .isIn(['Sedan (Toyota Etios / Dzire)', 'SUV (Mahindra XUV / Ertiga)', 'Innova'])
+    .isIn(['Sedan', 'SUV', 'Innova'])
     .withMessage('Invalid vehicle type.'),
 
   handleValidation,
@@ -70,7 +70,7 @@ const driverRules = [
     .matches(/^[6-9]\d{9}$/).withMessage('Enter a valid 10-digit mobile number.'),
   body('vehicleNumber').trim().notEmpty().withMessage('Vehicle number is required.'),
   body('vehicleType').notEmpty().withMessage('Vehicle type is required.')
-    .isIn(['Sedan (Toyota Etios / Dzire)', 'SUV (Mahindra XUV / Ertiga)', 'Innova'])
+    .isIn(['Sedan', 'SUV', 'Innova'])
     .withMessage('Invalid vehicle type.'),
   handleValidation,
 ];
@@ -83,3 +83,4 @@ const contactRules = [
 ];
 
 module.exports = { bookingRules, adminLoginRules, driverRules, contactRules };
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * models/Booking.js
  * Mongoose schema for customer taxi bookings (full version)
  */
@@ -27,7 +27,7 @@ const bookingSchema = new mongoose.Schema(
     },
     vehicleType: {
       type: String, required: [true, 'Vehicle type is required'],
-      enum: ['Sedan (Toyota Etios / Dzire)', 'SUV (Mahindra XUV / Ertiga)', 'Innova'],
+      enum: ['Sedan', 'SUV', 'Innova'],
     },
     tripType: {
       type: String,
@@ -64,3 +64,4 @@ bookingSchema.index({ journeyDate: 1 });
 bookingSchema.index({ driverId: 1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);
+

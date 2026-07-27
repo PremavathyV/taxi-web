@@ -1,4 +1,4 @@
-/**
+﻿/**
  * backend/admin/app.js  – Sundara Travels Admin Dashboard
  * Complete feature set: Auth, Bookings, Drivers, Payments, Contacts, Reports, Settings
  */
@@ -403,7 +403,7 @@ function openDriverModal() {
   ['driverId','driverName','driverPhone','driverEmail','driverAddress','driverVehicleNo','driverLicense'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  document.getElementById('driverVehicleType').value = 'Sedan (Toyota Etios / Dzire)';
+  document.getElementById('driverVehicleType').value = 'Sedan';
 }
 
 function editDriver(d) {
@@ -770,3 +770,5 @@ function buildPager(containerId, current, pages, loadFn) {
 const xs = document.createElement('style');
 xs.textContent = `.btn-xs{padding:2px 8px!important;font-size:.72rem!important;border-radius:6px!important;}`;
 document.head.appendChild(xs);
+
+

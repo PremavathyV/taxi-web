@@ -431,8 +431,8 @@ function todayStr() {
    ══════════════════════════════════════════════════════ */
 (function () {
   const rates = {
-    'Sedan (Toyota Etios / Dzire)': { rate: 14, min: 1000 },
-    'SUV (Mahindra XUV / Ertiga)':  { rate: 18, min: 1400 },
+    'Sedan': { rate: 14, min: 1000 },
+    'SUV':  { rate: 18, min: 1400 },
     'Innova':                        { rate: 20, min: 1600 },
   };
   const distances = {
@@ -468,4 +468,5 @@ function todayStr() {
     el.addEventListener('input', update);
   });
 }());
+
 

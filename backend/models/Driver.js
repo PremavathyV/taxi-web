@@ -1,4 +1,4 @@
-/**
+﻿/**
  * models/Driver.js
  * Mongoose schema for taxi drivers
  */
@@ -22,7 +22,7 @@ const driverSchema = new mongoose.Schema(
     },
     vehicleType: {
       type: String, required: [true, 'Vehicle type is required'],
-      enum: ['Sedan (Toyota Etios / Dzire)', 'SUV (Mahindra XUV / Ertiga)', 'Innova'],
+      enum: ['Sedan', 'SUV', 'Innova'],
     },
     licenseNumber: { type: String, trim: true, default: '' },
     email:         { type: String, trim: true, lowercase: true, default: '' },
@@ -39,3 +39,4 @@ const driverSchema = new mongoose.Schema(
 driverSchema.index({ isAvailable: 1, isActive: 1 });
 
 module.exports = mongoose.model('Driver', driverSchema);
+
