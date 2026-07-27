@@ -21,6 +21,15 @@ async function req(method, url, body) {
   if (body) opts.body = JSON.stringify(body);
   const res  = await fetch(API + url, opts);
   const data = await res.json();
+
+  // If 401 on any protected call — force logout
+  if (res.status === 401) {
+    TOKEN = ''; localStorage.removeItem('st_admin_token');
+    document.getElementById('dashPage').style.display = 'none';
+    document.getElementById('authPage').style.display  = 'flex';
+    throw new Error('Session expired. Please login again.');
+  }
+
   if (!res.ok) throw new Error(data.message || 'Request failed');
   return data;
 }
@@ -80,10 +89,23 @@ document.getElementById('togglePwd')?.addEventListener('click', () => {
 
 document.getElementById('logoutBtn').addEventListener('click', e => {
   e.preventDefault();
-  TOKEN = ''; localStorage.removeItem('st_admin_token');
+  TOKEN = '';
+  localStorage.removeItem('st_admin_token');
   clearInterval(refreshInterval);
-  document.getElementById('dashPage').style.display = 'none';
+  // Clear all cached data
+  currentBookingId = null;
+  currentContactId = null;
+  currentPage = 1;
+  // Show login, hide dashboard
+  document.getElementById('dashPage').style.display  = 'none';
   document.getElementById('authPage').style.display  = 'flex';
+  // Clear login form
+  const emailEl = document.getElementById('loginEmail');
+  const pwdEl   = document.getElementById('loginPassword');
+  if (emailEl) emailEl.value = '';
+  if (pwdEl)   pwdEl.value   = '';
+  const errEl = document.getElementById('authError');
+  if (errEl) errEl.classList.add('d-none');
 });
 
 function setAdminInfo(data) {
@@ -107,10 +129,25 @@ function showDash() {
   }, 30000);
 }
 
-// Auto-login
+// Auto-login — verify token is still valid before skipping login
 if (TOKEN) {
-  GET('/admin/me').then(r => { setAdminInfo(r.data); showDash(); })
-    .catch(() => { TOKEN = ''; localStorage.removeItem('st_admin_token'); });
+  GET('/admin/me')
+    .then(r => {
+      // Token valid — go to dashboard
+      setAdminInfo(r.data);
+      showDash();
+    })
+    .catch(() => {
+      // Token expired or invalid — force login
+      TOKEN = '';
+      localStorage.removeItem('st_admin_token');
+      document.getElementById('authPage').style.display  = 'flex';
+      document.getElementById('dashPage').style.display  = 'none';
+    });
+} else {
+  // No token — show login
+  document.getElementById('authPage').style.display  = 'flex';
+  document.getElementById('dashPage').style.display  = 'none';
 }
 
 /* ══ Navigation ══════════════════════════════════════════ */
