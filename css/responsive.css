@@ -1,247 +1,136 @@
 /* ============================================================
-   OUTSTATION – Responsive Stylesheet
-   Mobile-first breakpoints
+   SUNDARA TRAVELS – Responsive
    ============================================================ */
 
-/* ---- Extra Large (≥1400px) ---- */
+/* ── Large desktop ── */
 @media (min-width: 1400px) {
-  .hero-container { max-width: 1320px; }
+  .hero-container { max-width: 1360px; }
 }
 
-/* ---- Large (≥1200px desktop) ---- */
-@media (min-width: 1200px) {
-  .hero-heading { font-size: 3.8rem; }
-  .about-img-badge { right: -28px; }
-  .about-img-badge2 { right: -28px; }
-}
-
-/* ---- Medium-Large (992px–1199px laptop) ---- */
+/* ── Tablet landscape (992–1199) ── */
 @media (max-width: 1199px) {
   .hero-container { grid-template-columns: 1fr 420px; gap: 40px; }
   .hero-heading { font-size: 3rem; }
-  .why-item.left { padding-right: calc(50% + 24px); }
-  .why-item.right { padding-left: calc(50% + 24px); }
-  .app-wrap { gap: 40px; padding: 48px 40px; }
-}
-
-/* ---- WhatsApp Booking Section ---- */
-@media (max-width: 1100px) {
   .wa-booking-wrap { gap: 36px; }
-}
-@media (max-width: 991px) {
-  .wa-booking-wrap { grid-template-columns: 1fr; gap: 36px; }
-  .wa-booking-left h2 { font-size: 1.8rem; }
-  .wa-booking-left p { max-width: 100%; }
-  .wa-form-card { padding: 28px 24px; }
-  .wb-vehicle-picker { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 575px) {
-  .section-wa-booking { padding: 64px 0 60px; }
-  .wa-form-card { padding: 22px 18px; }
-  .wa-booking-contact { flex-direction: column; }
-  .wa-contact-pill { justify-content: center; }
-  .wb-vehicle-picker { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .wbv-sub { display: none; } /* hide sub-label on tiny screens */
-  .wb-confirm-box { padding: 32px 20px 28px; }
+  .tariff-wrap { gap: 20px; }
 }
 
-/* ---- Tablet (768px–991px) ---- */
+/* ── Tablet portrait (768–991) ── */
 @media (max-width: 991px) {
   :root { --nav-h: 64px; }
 
-  /* Navbar mobile – Bootstrap controls show/hide, we only style the open state */
+  /* Navbar mobile */
   #navMenu {
-    background: rgba(255,255,255,0.97);
-    backdrop-filter: blur(20px);
-    border-radius: var(--radius);
-    padding: 16px 20px 20px;
-    margin-top: 8px;
-    border: 1px solid rgba(255,193,7,0.15);
-    box-shadow: var(--shadow-lg);
+    background: rgba(248,250,252,0.97); backdrop-filter: blur(20px);
+    border-radius: var(--radius); padding: 16px 20px 20px; margin-top: 8px;
+    border: 1px solid rgba(37,99,235,0.1); box-shadow: var(--shadow-lg);
   }
-  [data-theme="dark"] #navMenu {
-    background: rgba(15,23,42,0.98);
-    border-color: rgba(255,255,255,0.08);
-  }
-  /* When open, stack items vertically */
-  #navMenu.show,
-  #navMenu.collapsing {
-    display: block !important;
-  }
-  /* Nav links stack vertically */
-  .navbar-nav {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 2px !important;
-    margin: 0 0 8px !important;
-    width: 100%;
-  }
-  .navbar-nav .nav-link {
-    width: 100%;
-    padding: 9px 12px !important;
-    font-size: 0.9rem !important;
-  }
-  /* Actions row */
-  .nav-actions {
-    margin-left: 0 !important;
-    margin-top: 10px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(0,0,0,0.07);
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  [data-theme="dark"] .nav-actions { border-color: rgba(255,255,255,0.07); }
-  .btn-book-nav { font-size: 0.85rem !important; padding: 9px 20px !important; }
+  [data-theme="dark"] #navMenu { background: rgba(11,17,32,0.98); border-color: rgba(255,255,255,0.07); }
+  #navMenu.show,#navMenu.collapsing { display: block !important; }
+  .navbar-nav { flex-direction: column !important; align-items: flex-start !important; gap: 2px !important; margin: 0 0 8px !important; width: 100%; }
+  .navbar-nav .nav-link { width: 100%; padding: 9px 12px !important; font-size: 0.9rem !important; }
+  .nav-actions { margin-left: 0 !important; margin-top: 10px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.06); flex-wrap: wrap; gap: 10px; }
+  [data-theme="dark"] .nav-actions { border-color: rgba(255,255,255,0.06); }
 
   /* Hero */
-  .hero-section { padding: calc(var(--nav-h) + 32px) 0 64px; }
-  .hero-container { grid-template-columns: 1fr; gap: 40px; text-align: center; }
-  .hero-left { order: 1; }
+  .hero-section { padding: 48px 0 60px; }
+  .hero-container { grid-template-columns: 1fr; gap: 44px; text-align: center; padding: 48px 20px; }
+  .hero-left { order: 1; align-items: center; padding-right: 0; }
   .hero-right { order: 2; max-width: 480px; margin: 0 auto; width: 100%; }
   .hero-btns { justify-content: center; }
   .hero-trust { justify-content: center; }
   .hero-sub { margin-left: auto; margin-right: auto; }
+  .hero-badge { margin-left: auto; margin-right: auto; }
 
   /* About */
-  .about-img-badge { right: 12px; }
-  .about-img-badge2 { right: 12px; }
   .about-features { grid-template-columns: 1fr 1fr; }
+  .about-content { text-align: center; }
+  .mv-card { text-align: left; }
 
-  /* Why Timeline */
+  /* Why timeline */
   .why-timeline::before { left: 22px; }
-  .why-item { flex-direction: row !important; padding: 0 0 0 60px !important; }
+  .why-item { flex-direction: row !important; padding: 0 0 0 58px !important; }
   .why-dot { left: 22px !important; }
   .why-content { max-width: 100%; }
 
-  /* App section */
-  .app-wrap { flex-direction: column; text-align: center; padding: 40px 32px; }
-  .app-features { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto 28px; }
-  .app-store-btns { justify-content: center; }
+  /* WA Booking */
+  .wa-booking-wrap { grid-template-columns: 1fr; gap: 36px; }
+  .wa-booking-left h2 { font-size: 1.8rem; }
+  .wa-booking-left p { max-width: 100%; }
+  .wa-form-card { padding: 26px 22px; }
+  .wb-vehicle-picker { grid-template-columns: repeat(3,1fr); }
 
-  /* Fleet */
-  .fleet-swiper-wrap { padding: 20px 0 48px; }
+  /* Tariff */
+  .tariff-wrap { grid-template-columns: 1fr; gap: 20px; }
 
   /* Footer */
   .footer-bottom-inner { flex-direction: column; text-align: center; }
   .footer-legal { justify-content: center; }
 
   /* Stats */
-  .stats-grid { gap: 0; }
-  .stat-item { min-width: 100px; padding: 12px 10px; }
   .stat-divider { display: none; }
 }
 
-/* ---- Mobile Large (576px–767px) ---- */
+/* ── Mobile (max 767) ── */
 @media (max-width: 767px) {
-  .section-about, .section-services, .section-why,
-  .section-fleet, .section-routes, .section-process,
-  .section-reviews, .section-faq, .section-app,
-  .section-tariff, .section-cta, .section-contact { padding: 72px 0; }
-
-  /* Tariff – stack to single column */
-  .tariff-wrap { grid-template-columns: 1fr; gap: 20px; }
-  .tariff-card-header { padding: 18px 20px 16px; gap: 12px; }
-  .tariff-header-icon { width: 40px; height: 40px; min-width: 40px; font-size: 1rem; }
-  .tariff-card-header h3 { font-size: 0.95rem; }
-  .tariff-table thead th,
-  .tariff-table tbody td { padding: 11px 14px; font-size: 0.8rem; }
-  .tariff-rate { font-size: 0.92rem; }
+  .section-about,.section-services,.section-why,
+  .section-tariff,.section-routes,.section-process,
+  .section-reviews,.section-faq,.section-wa-booking,
+  .section-cta,.section-contact { padding: 72px 0; }
 
   .about-features { grid-template-columns: 1fr; }
-  .about-img-main img { height: 320px; }
-
-  .routes-grid { grid-template-columns: 1fr; }
   .services-grid { grid-template-columns: 1fr 1fr; }
+  .routes-grid { grid-template-columns: 1fr; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; padding: 0 8px; }
+  .stat-divider { display: none; }
+  .stat-num { font-size: 1.5rem; }
 
-  .hero-heading { font-size: 2.3rem; }
-  .hero-sub { font-size: 0.95rem; }
-  .section-title { font-size: 1.7rem; }
-
-  .booking-card { padding: 24px 20px; }
+  .hero-heading { font-size: 2.2rem; }
+  .section-title { font-size: 1.75rem; }
+  .booking-card { padding: 24px 18px; }
   .form-row-two { grid-template-columns: 1fr; }
 
-  /* Stats */
-  .stats-grid { grid-template-columns: repeat(3, 1fr); display: grid; gap: 16px; padding: 0 8px; }
-  .stat-divider { display: none; }
-  .stat-num { font-size: 1.6rem; }
+  .wa-booking-contact { flex-direction: column; }
+  .wa-contact-pill { justify-content: center; }
+  .wb-vehicle-picker { grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .wbv-sub { display: none; }
+  .wb-confirm-box { padding: 30px 20px 26px; }
 
-  /* Process */
-  .process-timeline::before { left: 22px; }
-  .process-step { gap: 16px; }
-
-  /* App */
-  .app-wrap { padding: 32px 24px; }
-  .phone-mockup { width: 180px; height: 350px; }
-  .app-mockup { display: none; }
-
-  /* Floating buttons */
-  .float-whatsapp { bottom: 140px; right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
-  .float-call { bottom: 86px; right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
-  .float-chat { bottom: 32px; right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
-  .float-tooltip { display: none; }
-
-  /* Sticky bar – show on mobile */
+  .float-whatsapp { bottom: 136px; right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
+  .float-call     { bottom: 82px;  right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
+  .float-chat     { bottom: 28px;  right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
+  .float-tooltip  { display: none; }
   .sticky-book-bar { display: block; }
-  /* Add padding to prevent sticky bar overlap */
   .main-footer { padding-bottom: 72px; }
-
-  /* Contact */
-  .contact-form-wrap { padding: 24px 20px; }
-
-  /* CTA */
-  .section-cta h2 { font-size: 2rem; }
+  .contact-form-wrap { padding: 22px 18px; }
+  .section-cta h2 { font-size: 1.9rem; }
   .cta-btns { flex-direction: column; align-items: center; }
-  .btn-cta-primary, .btn-cta-whatsapp { width: 100%; max-width: 280px; justify-content: center; }
-
-  /* FAQ */
+  .btn-cta-primary,.btn-cta-whatsapp { width: 100%; max-width: 280px; justify-content: center; }
   .faq-body { padding-left: 20px; }
+  .back-to-top { left: auto; right: 14px; bottom: 176px; }
 }
 
-/* ---- Mobile Small (≤575px) ---- */
+/* ── Mobile small (max 575) ── */
 @media (max-width: 575px) {
   .hero-btns { flex-direction: column; align-items: center; }
-  .btn-hero-primary, .btn-hero-secondary { width: 100%; max-width: 280px; justify-content: center; }
-
+  .btn-hero-primary,.btn-hero-secondary { width: 100%; max-width: 280px; justify-content: center; }
   .hero-trust { gap: 12px; justify-content: center; }
   .trust-divider { display: none; }
-
   .services-grid { grid-template-columns: 1fr; }
-  .routes-grid { grid-template-columns: 1fr; }
-
-  .fleet-card .fleet-img-wrap { height: 180px; }
-
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
   .why-content { flex-direction: column; gap: 10px; }
-
-  .about-img-badge, .about-img-badge2 { right: 8px; font-size: 0.75rem; padding: 8px 12px; }
-
-  .app-store-btns { flex-direction: column; align-items: center; }
-  .app-store-btn { width: 100%; max-width: 240px; }
-
   .footer-legal { flex-direction: column; gap: 8px; text-align: center; }
-
-  .back-to-top { left: auto; right: 14px; bottom: 180px; }
-
-  /* Prevent horizontal scroll */
-  .hero-section, .section-why { overflow-x: hidden; }
-
-  /* Booking form */
-  .booking-card { margin: 0 4px; }
+  .app-store-btns { flex-direction: column; align-items: center; }
+  .tariff-table thead th,.tariff-table tbody td { padding: 10px 12px; font-size: 0.78rem; }
 }
 
-/* ---- Print ---- */
+/* ── Print ── */
 @media print {
-  .sticky-book-bar, .float-whatsapp, .float-call, .float-chat, .back-to-top, #mainNav { display: none !important; }
+  .sticky-book-bar,.float-whatsapp,.float-call,.float-chat,.back-to-top,#mainNav { display: none !important; }
   body { background: #fff !important; color: #000 !important; }
 }
 
-/* ---- Reduced motion ---- */
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+  *,*::before,*::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
