@@ -13,8 +13,8 @@ let currentPage      = 1;
 let refreshInterval  = null;
 
 // ALWAYS show login page first — never show dashboard until verified
-document.getElementById('authPage').style.display  = 'flex';
-document.getElementById('dashPage').style.display  = 'none';
+document.getElementById('authPage').classList.remove('hidden');
+document.getElementById('dashPage').style.display='none';
 
 /* ══ HTTP Helpers ════════════════════════════════════════ */
 async function req(method, url, body) {
@@ -29,8 +29,8 @@ async function req(method, url, body) {
   // If 401 on any protected call — force logout
   if (res.status === 401) {
     TOKEN = ''; localStorage.removeItem('st_admin_token');
-    document.getElementById('dashPage').style.display = 'none';
-    document.getElementById('authPage').style.display  = 'flex';
+    document.getElementById('dashPage').style.display='none';
+    document.getElementById('authPage').classList.remove('hidden');
     throw new Error('Session expired. Please login again.');
   }
 
@@ -101,8 +101,8 @@ document.getElementById('logoutBtn').addEventListener('click', e => {
   currentContactId = null;
   currentPage = 1;
   // Show login, hide dashboard
-  document.getElementById('dashPage').style.display  = 'none';
-  document.getElementById('authPage').style.display  = 'flex';
+  document.getElementById('dashPage').style.display='none';
+  document.getElementById('authPage').classList.remove('hidden');
   // Clear login form
   const emailEl = document.getElementById('loginEmail');
   const pwdEl   = document.getElementById('loginPassword');
@@ -123,8 +123,8 @@ function setAdminInfo(data) {
 }
 
 function showDash() {
-  document.getElementById('authPage').style.display  = 'none';
-  document.getElementById('dashPage').style.display  = 'block';
+  document.getElementById('authPage').classList.add('hidden');
+  document.getElementById('dashPage').style.display='block';
   startClock();
   loadDashboard();
   // Auto-refresh dashboard every 30s
@@ -136,8 +136,8 @@ function showDash() {
 // No auto-login — user must always enter credentials manually.
 // Token is used only for API calls after login.
 TOKEN = ''; localStorage.removeItem('st_admin_token');
-document.getElementById('authPage').style.display = 'flex';
-document.getElementById('dashPage').style.display = 'none';
+document.getElementById('authPage').classList.remove('hidden');
+document.getElementById('dashPage').style.display='none';
 
 /* ══ Navigation ══════════════════════════════════════════ */
 document.querySelectorAll('[data-sec]').forEach(a => {
@@ -796,5 +796,6 @@ function buildPager(containerId, current, pages, loadFn) {
 const xs = document.createElement('style');
 xs.textContent = `.btn-xs{padding:2px 8px!important;font-size:.72rem!important;border-radius:6px!important;}`;
 document.head.appendChild(xs);
+
 
 

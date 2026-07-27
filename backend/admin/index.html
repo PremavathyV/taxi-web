@@ -13,17 +13,34 @@
 body{font-family:'Plus Jakarta Sans',sans-serif;background:#F1F5F9;color:#0F172A;}
 
 /* ── AUTH ── */
-#authPage{display:none;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0F172A 0%,#1e3a5f 100%);}
-.auth-card{background:#fff;border-radius:20px;padding:44px 40px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.35);}
+#authPage{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  background:linear-gradient(135deg,#0F172A 0%,#1e3a5f 60%,#0F172A 100%);
+  padding:20px;
+}
+#authPage.hidden{display:none!important;}
+.auth-card{
+  background:#fff;
+  border-radius:20px;
+  padding:44px 40px;
+  width:100%;
+  max-width:420px;
+  box-shadow:0 24px 64px rgba(0,0,0,0.5);
+}
 .auth-logo{text-align:center;margin-bottom:32px;}
-.auth-logo .logo-icon{width:56px;height:56px;background:#0F172A;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#F59E0B;font-size:1.4rem;margin:0 auto 14px;}
-.auth-logo h2{font-size:1.5rem;font-weight:800;color:#0F172A;}.auth-logo h2 span{color:#F59E0B;}
-.auth-logo p{color:#94A3B8;font-size:.82rem;margin:4px 0 0;}
+.auth-logo .logo-icon{width:60px;height:60px;background:#0F172A;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#F59E0B;font-size:1.5rem;margin:0 auto 16px;box-shadow:0 8px 24px rgba(249,158,11,0.3);}
+.auth-logo h2{font-size:1.6rem;font-weight:800;color:#0F172A;margin:0 0 4px;}.auth-logo h2 span{color:#F59E0B;}
+.auth-logo p{color:#94A3B8;font-size:.82rem;margin:0;}
 .auth-card .form-label{font-size:.78rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;}
-.auth-card .form-control{border-radius:10px;padding:11px 14px;border:1.5px solid #E2E8F0;font-size:.88rem;font-family:inherit;}
-.auth-card .form-control:focus{border-color:#F59E0B;box-shadow:0 0 0 3px rgba(245,158,11,.12);}
-.btn-login{width:100%;background:linear-gradient(135deg,#F59E0B,#d97706);border:none;color:#fff;font-weight:700;padding:13px;border-radius:10px;font-size:.95rem;font-family:inherit;cursor:pointer;transition:.2s;}
+.auth-card .form-control{border-radius:10px;padding:12px 14px;border:1.5px solid #E2E8F0;font-size:.9rem;font-family:inherit;color:#0F172A;}
+.auth-card .form-control:focus{border-color:#F59E0B;box-shadow:0 0 0 3px rgba(245,158,11,.12);outline:none;}
+.btn-login{width:100%;background:linear-gradient(135deg,#F59E0B,#d97706);border:none;color:#fff;font-weight:700;padding:14px;border-radius:10px;font-size:1rem;font-family:inherit;cursor:pointer;transition:.2s;letter-spacing:.3px;}
 .btn-login:hover{background:linear-gradient(135deg,#d97706,#b45309);}
+.btn-login:active{transform:scale(.98);}
+.auth-divider{text-align:center;font-size:.78rem;color:#94A3B8;margin:16px 0;}
 
 /* ── LAYOUT ── */
 #dashPage{display:none;}
