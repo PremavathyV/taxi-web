@@ -25,6 +25,8 @@ const driverSchema = new mongoose.Schema(
       enum: ['Sedan (Toyota Etios / Dzire)', 'SUV (Mahindra XUV / Ertiga)', 'Innova'],
     },
     licenseNumber: { type: String, trim: true, default: '' },
+    email:         { type: String, trim: true, lowercase: true, default: '' },
+    address:       { type: String, trim: true, default: '' },
     isAvailable:   { type: Boolean, default: true },
     isActive:      { type: Boolean, default: true },
     totalTrips:    { type: Number, default: 0 },

@@ -100,4 +100,26 @@ const seedAdmin = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { loginAdmin, getMe, getDashboard, seedAdmin };
+module.exports = { loginAdmin, getMe, getDashboard, seedAdmin }; // superseded — full export below
+
+/** PATCH /api/admin/password */
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword)
+      return res.status(400).json({ success: false, message: 'Both current and new password are required.' });
+    if (newPassword.length < 6)
+      return res.status(422).json({ success: false, message: 'New password must be at least 6 characters.' });
+
+    const admin = await Admin.findById(req.admin._id).select('+password');
+    if (!admin || !(await admin.comparePassword(currentPassword)))
+      return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
+
+    admin.password = newPassword;
+    await admin.save(); // pre-save hook hashes it
+
+    res.json({ success: true, message: 'Password changed successfully.' });
+  } catch (err) { next(err); }
+};
+
+module.exports = { loginAdmin, getMe, getDashboard, seedAdmin, changePassword };
