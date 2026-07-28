@@ -1,8 +1,19 @@
 ﻿/**
  * backend/admin/app.js  – Sundara Travels Admin Dashboard
- * Complete feature set: Auth, Bookings, Drivers, Payments, Contacts, Reports, Settings
  */
 'use strict';
+
+/* ══ Page helpers — defined first so they can be called immediately ═══ */
+function showAuth()     {
+  document.getElementById('authPage').style.cssText = 'display:flex!important';
+  document.getElementById('dashPage').style.cssText = 'display:none!important';
+}
+function showDashPage() {
+  document.getElementById('authPage').style.cssText = 'display:none!important';
+  document.getElementById('dashPage').style.cssText = 'display:block!important';
+}
+function hideDash()     { document.getElementById('dashPage').style.cssText = 'display:none!important'; }
+function hideAuth()     { document.getElementById('authPage').style.cssText = 'display:none!important'; }
 
 /* ══ Config ══════════════════════════════════════════════ */
 const API = '/api';
@@ -12,9 +23,9 @@ let currentContactId = null;
 let currentPage      = 1;
 let refreshInterval  = null;
 
-// ALWAYS show login page first — never show dashboard until verified
-document.getElementById('authPage').classList.remove('hidden');
-document.getElementById('dashPage').style.display='none';
+// Always start at login — clear any stale token
+TOKEN = ''; localStorage.removeItem('st_admin_token');
+showAuth();
 
 /* ══ HTTP Helpers ════════════════════════════════════════ */
 async function req(method, url, body) {
@@ -29,8 +40,8 @@ async function req(method, url, body) {
   // If 401 on any protected call — force logout
   if (res.status === 401) {
     TOKEN = ''; localStorage.removeItem('st_admin_token');
-    document.getElementById('dashPage').style.display='none';
-    document.getElementById('authPage').classList.remove('hidden');
+    hideDash();
+    showAuth();
     throw new Error('Session expired. Please login again.');
   }
 
@@ -101,8 +112,8 @@ document.getElementById('logoutBtn').addEventListener('click', e => {
   currentContactId = null;
   currentPage = 1;
   // Show login, hide dashboard
-  document.getElementById('dashPage').style.display='none';
-  document.getElementById('authPage').classList.remove('hidden');
+  hideDash();
+  showAuth();
   // Clear login form
   const emailEl = document.getElementById('loginEmail');
   const pwdEl   = document.getElementById('loginPassword');
@@ -123,8 +134,8 @@ function setAdminInfo(data) {
 }
 
 function showDash() {
-  document.getElementById('authPage').classList.add('hidden');
-  document.getElementById('dashPage').style.display='block';
+  hideAuth();
+  showDashPage();
   startClock();
   loadDashboard();
   // Auto-refresh dashboard every 30s
@@ -136,8 +147,8 @@ function showDash() {
 // No auto-login — user must always enter credentials manually.
 // Token is used only for API calls after login.
 TOKEN = ''; localStorage.removeItem('st_admin_token');
-document.getElementById('authPage').classList.remove('hidden');
-document.getElementById('dashPage').style.display='none';
+showAuth();
+hideDash();
 
 /* ══ Navigation ══════════════════════════════════════════ */
 document.querySelectorAll('[data-sec]').forEach(a => {
@@ -796,6 +807,7 @@ function buildPager(containerId, current, pages, loadFn) {
 const xs = document.createElement('style');
 xs.textContent = `.btn-xs{padding:2px 8px!important;font-size:.72rem!important;border-radius:6px!important;}`;
 document.head.appendChild(xs);
+
 
 
 
