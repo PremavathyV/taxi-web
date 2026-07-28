@@ -62,8 +62,6 @@
         <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
         <li class="nav-item"><a class="nav-link" href="#routes">Routes</a></li>
         <li class="nav-item"><a class="nav-link" href="#why-us">Why Us</a></li>
-        <li class="nav-item"><a class="nav-link" href="#reviews">Reviews</a></li>
-        <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
         <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
       </ul>
       <div class="nav-actions d-flex align-items-center gap-3">
@@ -93,13 +91,13 @@
     <div class="floating-pin pin-3"><i class="fas fa-map-pin"></i></div>
     <div class="floating-car"><i class="fas fa-car-side"></i></div>
   </div>
-  <div class="container hero-container">
-    <div class="hero-left" data-aos="fade-right" data-aos-duration="900">
+  <div class="container hero-container hero-container--full">
+    <div class="hero-left hero-left--full" data-aos="fade-up" data-aos-duration="900">
       <span class="hero-badge"><i class="fas fa-star"></i> Premium Outstation Service</span>
       <h1 class="hero-heading">Travel Anywhere<br/><span class="gradient-text">Across South India</span></h1>
       <p class="hero-sub">Reliable Taxi Service with Professional Drivers,<br class="d-none d-lg-block"/> Clean Cars and Affordable Pricing.</p>
       <div class="hero-btns">
-        <a href="#booking" class="btn btn-hero-primary"><i class="fas fa-taxi me-2"></i>Book Ride</a>
+        <a href="#book-now" class="btn btn-hero-primary"><i class="fas fa-taxi me-2"></i>Book Ride</a>
         <a href="tel:+917639103970" class="btn btn-hero-secondary"><i class="fas fa-phone me-2"></i>Call Now</a>
       </div>
       <div class="hero-trust">
@@ -117,52 +115,11 @@
           <div class="trust-icon"><i class="fas fa-users"></i></div>
           <div class="trust-text"><span class="trust-num" data-count="12000">12K+</span><span class="trust-label">Happy Customers</span></div>
         </div>
-      </div>
-    </div>
-    <div class="hero-right" data-aos="fade-left" data-aos-duration="900" data-aos-delay="200">
-      <div class="booking-card glass-card" id="booking">
-        <div class="booking-card-header">
-          <h3><i class="fas fa-route me-2"></i>Book Your Ride</h3>
-          <p>Get instant fare estimate</p>
+        <div class="trust-divider"></div>
+        <div class="trust-item">
+          <div class="trust-icon"><i class="fas fa-map-marked-alt"></i></div>
+          <div class="trust-text"><span class="trust-num">250+</span><span class="trust-label">Routes Covered</span></div>
         </div>
-        <form class="booking-form" id="bookingForm" novalidate>
-          <div class="form-group-custom">
-            <label><i class="fas fa-user"></i> Full Name</label>
-            <input type="text" id="hbName" class="form-input-custom" placeholder="Enter your name" required />
-          </div>
-          <div class="form-group-custom">
-            <label><i class="fas fa-map-marker-alt"></i> Pickup City</label>
-            <input type="text" id="hbPickup" class="form-input-custom" placeholder="Enter pickup city" required />
-          </div>
-          <div class="form-group-custom">
-            <label><i class="fas fa-flag-checkered"></i> Destination City</label>
-            <input type="text" id="hbDrop" class="form-input-custom" placeholder="Enter destination" required />
-          </div>
-          <div class="form-row-two">
-            <div class="form-group-custom">
-              <label><i class="far fa-calendar-alt"></i> Journey Date</label>
-              <input type="date" id="hbDate" class="form-input-custom" required />
-            </div>
-            <div class="form-group-custom">
-              <label><i class="far fa-clock"></i> Pickup Time</label>
-              <input type="time" id="hbTime" class="form-input-custom" required />
-            </div>
-          </div>
-          <div class="form-group-custom">
-            <label><i class="fas fa-car"></i> Vehicle Type</label>
-            <select id="hbVehicle" class="form-input-custom">
-              <option value="">Select Vehicle</option>
-              <option value="Sedan">Sedan</option>
-              <option value="SUV">SUV</option>
-              <option value="Innova">Innova</option>
-            </select>
-          </div>
-          <div class="form-group-custom">
-            <label><i class="fas fa-mobile-alt"></i> Mobile Number</label>
-            <input type="tel" id="hbMobile" class="form-input-custom" placeholder="+91 76391 03970" required />
-          </div>
-          <button type="submit" class="btn btn-book-submit">Book Taxi Now <i class="fas fa-arrow-right ms-2"></i></button>
-        </form>
       </div>
     </div>
   </div>
@@ -219,6 +176,13 @@
                   <span class="wb-mobile-status" id="wbMobileStatus" aria-live="polite"></span>
                 </div>
               </div>
+            </div>
+
+            <!-- Email Address (NEW) -->
+            <div class="form-group-custom">
+              <label for="wbEmail"><i class="fas fa-envelope"></i> Email Address</label>
+              <input type="email" id="wbEmail" class="form-input-custom"
+                     placeholder="your@email.com" required autocomplete="email" />
             </div>
 
             <!-- Row 2: Pickup + Drop (plain text inputs) -->
@@ -284,6 +248,13 @@
                   <span class="wbv-price">₹20/km</span>
                 </button>
               </div>
+            </div>
+
+            <!-- Additional Message -->
+            <div class="form-group-custom">
+              <label for="wbMessage"><i class="fas fa-comment-alt"></i> Additional Message</label>
+              <textarea id="wbMessage" class="form-input-custom" rows="3"
+                        placeholder="Any special requirements or instructions…"></textarea>
             </div>
 
             <!-- Submit -->
@@ -849,171 +820,6 @@
   </div>
 </section>
 
-<!-- ===== REVIEWS ===== -->
-<section class="section-reviews" id="reviews">
-  <div class="container">
-    <div class="section-badge" data-aos="fade-up"><span>Customer Reviews</span></div>
-    <h2 class="section-title text-center" data-aos="fade-up" data-aos-delay="100">What Travellers <span class="gradient-text">Say About Us</span></h2>
-    <div class="reviews-swiper-wrap" data-aos="fade-up" data-aos-delay="200">
-      <div class="swiper reviewSwiper">
-        <div class="swiper-wrapper">
-          <div class="swiper-slide">
-            <div class="review-card glass-card">
-              <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-              <p class="review-text">"Booked Chennai to Bangalore at 4 AM. Driver arrived 10 minutes early, car was spotless and the drive was smooth. Highly recommended!"</p>
-              <div class="review-author">
-                <img src="https://i.pravatar.cc/60?img=11" alt="Arjun Sharma" loading="lazy" />
-                <div>
-                  <strong>Arjun Sharma</strong>
-                  <span>Chennai</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="swiper-slide">
-            <div class="review-card glass-card">
-              <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-              <p class="review-text">"Used Sundara Travels for an airport drop during a late flight. No surge, transparent bill, and the driver even helped with luggage. Perfect service!"</p>
-              <div class="review-author">
-                <img src="https://i.pravatar.cc/60?img=47" alt="Priya Nair" loading="lazy" />
-                <div>
-                  <strong>Priya Nair</strong>
-                  <span>Kochi</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="swiper-slide">
-            <div class="review-card glass-card">
-              <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-stroke"></i></div>
-              <p class="review-text">"Booked an Innova Crysta for a family temple tour to Tirupati. Comfortable, AC was perfect and driver knew all the routes. Will book again!"</p>
-              <div class="review-author">
-                <img src="https://i.pravatar.cc/60?img=32" alt="Ramesh Kumar" loading="lazy" />
-                <div>
-                  <strong>Ramesh Kumar</strong>
-                  <span>Hyderabad</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="swiper-slide">
-            <div class="review-card glass-card">
-              <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-              <p class="review-text">"Corporate travel has never been easier. We use Sundara Travels for all our client transfers. Invoicing, GPS tracking, reliable drivers — absolutely love this service."</p>
-              <div class="review-author">
-                <img src="https://i.pravatar.cc/60?img=55" alt="Sneha Reddy" loading="lazy" />
-                <div>
-                  <strong>Sneha Reddy</strong>
-                  <span>Bangalore</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="swiper-slide">
-            <div class="review-card glass-card">
-              <div class="review-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-              <p class="review-text">"Ooty trip with family was unforgettable. The driver handled the ghat roads expertly and the car was in mint condition. Great value for money!"</p>
-              <div class="review-author">
-                <img src="https://i.pravatar.cc/60?img=15" alt="Vinod Menon" loading="lazy" />
-                <div>
-                  <strong>Vinod Menon</strong>
-                  <span>Coimbatore</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="swiper-pagination review-pagination"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ===== FAQ ===== -->
-<section class="section-faq" id="faq">
-  <div class="container">
-    <div class="section-badge" data-aos="fade-up"><span>FAQ</span></div>
-    <h2 class="section-title text-center" data-aos="fade-up" data-aos-delay="100">Frequently Asked <span class="gradient-text">Questions</span></h2>
-    <div class="row justify-content-center">
-      <div class="col-lg-8" data-aos="fade-up" data-aos-delay="200">
-        <div class="accordion faq-accordion" id="faqAccordion">
-          <div class="accordion-item faq-item glass-card">
-            <h2 class="accordion-header">
-              <button class="accordion-button faq-btn" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                <span class="faq-icon"><i class="fas fa-circle-question"></i></span>
-                How do I book a taxi with Sundara Travels?
-              </button>
-            </h2>
-            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-              <div class="accordion-body faq-body">Fill the booking form on our website or call +91-98765-43210. You'll receive a confirmation SMS with driver details within minutes.</div>
-            </div>
-          </div>
-          <div class="accordion-item faq-item glass-card">
-            <h2 class="accordion-header">
-              <button class="accordion-button faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                <span class="faq-icon"><i class="fas fa-circle-question"></i></span>
-                Is there a cancellation policy?
-              </button>
-            </h2>
-            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body faq-body">Free cancellation up to 4 hours before the trip. Cancellations within 4 hours incur a 20% charge. No-show is charged at 50%.</div>
-            </div>
-          </div>
-          <div class="accordion-item faq-item glass-card">
-            <h2 class="accordion-header">
-              <button class="accordion-button faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                <span class="faq-icon"><i class="fas fa-circle-question"></i></span>
-                Are there any hidden charges?
-              </button>
-            </h2>
-            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body faq-body">Absolutely none. The price you see includes driver allowance, fuel and basic tolls. Toll charges beyond the estimate are shared transparently.</div>
-            </div>
-          </div>
-          <div class="accordion-item faq-item glass-card">
-            <h2 class="accordion-header">
-              <button class="accordion-button faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                <span class="faq-icon"><i class="fas fa-circle-question"></i></span>
-                Can I track my cab in real-time?
-              </button>
-            </h2>
-            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body faq-body">Yes! Once your driver is assigned, you receive a live tracking link via SMS. You can share this with family for safety.</div>
-            </div>
-          </div>
-          <div class="accordion-item faq-item glass-card">
-            <h2 class="accordion-header">
-              <button class="accordion-button faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                <span class="faq-icon"><i class="fas fa-circle-question"></i></span>
-                What payment methods do you accept?
-              </button>
-            </h2>
-            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body faq-body">We accept UPI (GPay, PhonePe, Paytm), credit/debit cards, net banking, and cash. Pay after your ride — no advance required for most bookings.</div>
-            </div>
-          </div>
-          <div class="accordion-item faq-item glass-card">
-            <h2 class="accordion-header">
-              <button class="accordion-button faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
-                <span class="faq-icon"><i class="fas fa-circle-question"></i></span>
-                Do you offer round-trip discounts?
-              </button>
-            </h2>
-            <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body faq-body">Yes! Round trips receive a 10% discount on the total fare. Multi-day bookings and corporate packages get additional pricing benefits.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== MOBILE APP ===== -->
-<!-- Mobile App section removed -->
-
-
 <!-- ===== CTA SECTION ===== -->
 <section class="section-cta">
   <div class="cta-bg-anim">
@@ -1148,7 +954,6 @@
             <li><a href="#about">About Us</a></li>
             <li><a href="#why-us">Why Us</a></li>
             <li><a href="#fleet">Our Fleet</a></li>
-            <li><a href="#reviews">Reviews</a></li>
             <li><a href="#contact">Careers</a></li>
             <li><a href="#contact">Blog</a></li>
           </ul>
@@ -1247,6 +1052,8 @@
 <script src="./js/main.js"></script>
 </body>
 </html>
+
+
 
 
 

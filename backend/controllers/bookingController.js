@@ -16,17 +16,26 @@ const Payment = require('../models/Payment');
 const createBooking = async (req, res, next) => {
   try {
     const {
-      name, mobile, pickup, drop, journeyDate,
+      name, mobile, email, pickup, drop, journeyDate,
       pickupTime, vehicleType, tripType, specialInstructions,
     } = req.body;
 
     const booking = await Booking.create({
-      name, mobile, pickup, drop,
+      name, mobile, email: email || '',
+      pickup, drop,
       journeyDate: new Date(journeyDate),
       pickupTime, vehicleType,
       tripType:            tripType            || 'one_way',
       specialInstructions: specialInstructions || '',
       status: 'Pending',
+    });
+
+    // Send emails non-blocking — customer email if email provided
+    Promise.allSettled([
+      sendAdminNotification(booking),
+      email ? sendCustomerConfirmation(booking) : Promise.resolve(),
+    ]).then(results => {
+      results.forEach(r => { if (r.status === 'rejected') console.error('📧 Email error:', r.reason?.message); });
     });
 
     return res.status(201).json({

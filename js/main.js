@@ -48,31 +48,6 @@ const fleetSwiper = new Swiper('.fleetSwiper', {
 });
 
 /* ============================================================
-   SWIPER – Reviews Carousel
-   ============================================================ */
-const reviewSwiper = new Swiper('.reviewSwiper', {
-  slidesPerView: 1,
-  spaceBetween: 24,
-  loop: true,
-  speed: 700,
-  grabCursor: true,
-  centeredSlides: true,
-  pagination: {
-    el: '.review-pagination',
-    clickable: true,
-  },
-  breakpoints: {
-    768: { slidesPerView: 2 },
-    1100: { slidesPerView: 3 },
-  },
-  autoplay: {
-    delay: 4200,
-    disableOnInteraction: false,
-    pauseOnMouseEnter: true,
-  },
-});
-
-/* ============================================================
    NAVBAR – Scroll Behavior & Active Link
    ============================================================ */
 const mainNav = document.getElementById('mainNav');

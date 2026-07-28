@@ -16,6 +16,9 @@ const bookingSchema = new mongoose.Schema(
       type: String, required: [true, 'Mobile number is required'],
       match: [/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number'],
     },
+    email: {
+      type: String, trim: true, lowercase: true, default: '',
+    },
 
     // Trip details
     pickup:    { type: String, required: [true, 'Pickup location is required'], trim: true },

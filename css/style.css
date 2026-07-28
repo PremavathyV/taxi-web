@@ -1078,3 +1078,19 @@ img:not([src]),img[src=""] { background: linear-gradient(90deg,#f0f0f0 25%,#e0e0
    GOOGLE FONTS IMPORT
    ══════════════════════════════════════════════════════════ */
 /* Add to <head> in HTML: Inter + Space Grotesk */
+
+/* ── Hero full-width (no booking card) ─────────────────── */
+.hero-container--full {
+  grid-template-columns: 1fr;
+  max-width: 900px;
+  text-align: center;
+}
+.hero-left--full {
+  align-items: center;
+  padding-right: 0;
+}
+.hero-left--full .hero-sub { margin-left: auto; margin-right: auto; }
+.hero-left--full .hero-btns { justify-content: center; }
+.hero-left--full .hero-trust { justify-content: center; }
+.hero-left--full .hero-badge { margin-left: auto; margin-right: auto; }
+.hero-left--full .hero-heading { font-size: clamp(2.6rem, 6vw, 4.5rem); }

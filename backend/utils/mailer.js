@@ -76,8 +76,8 @@ const sendCustomerConfirmation = async (booking) => {
 
   await transporter.sendMail({
     from:    process.env.MAIL_FROM,
-    to:      `${booking.mobile}@sms.invalid`, // placeholder; swap with email field if added
-    subject: '✅ Booking Received – Sundara Travels',
+    to:      booking.email || `${booking.name.replace(/\s/g,'.')}@placeholder.invalid`,
+    subject: '✅ Booking Confirmed – Sundara Travels',
     html,
   });
 };
