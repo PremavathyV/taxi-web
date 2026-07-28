@@ -7,6 +7,7 @@
 const Booking = require('../models/Booking');
 const Driver  = require('../models/Driver');
 const Payment = require('../models/Payment');
+const { sendCustomerConfirmation, sendAdminNotification } = require('../utils/mailer');
 
 /* ══════════════════════════════════════
    PUBLIC
