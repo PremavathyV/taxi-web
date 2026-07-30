@@ -1,4 +1,4 @@
-/**
+﻿/**
  * server.js
  * Sundara Travels – Express API  (MongoDB + Mongoose)
  */
@@ -115,6 +115,27 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/drivers',  driverRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/contacts', contactRoutes);
+
+// Temporary email test route — remove after debugging
+app.get('/api/test-email', async (req, res) => {
+  try {
+    const nodemailer = require('nodemailer');
+    const t = nodemailer.createTransport({
+      host: process.env.SMTP_HOST, port: parseInt(process.env.SMTP_PORT), secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    await t.verify();
+    const info = await t.sendMail({
+      from: process.env.MAIL_FROM,
+      to: process.env.ADMIN_NOTIFY_EMAIL,
+      subject: '🧪 Sundara Travels Email Test',
+      html: '<h2>Email is working!</h2><p>Sent from Render via Brevo.</p>',
+    });
+    res.json({ success: true, messageId: info.messageId, accepted: info.accepted });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // 404
 app.use((req, res) => {
