@@ -11,11 +11,14 @@ const https = require('https');
  */
 function sendBrevoEmail({ to, toName, subject, html }) {
   return new Promise((resolve, reject) => {
-    const apiKey = (process.env.BREVO_API_KEY || process.env.SMTP_PASS || '').trim().replace(/[^\x20-\x7E]/g, '');
-    if (!apiKey || apiKey.includes('your_')) {
-      console.log('📧 Email skipped — BREVO_API_KEY not configured');
+    const apiKey = (process.env.BREVO_API_KEY || '').trim().replace(/[^\x20-\x7E]/g, '');
+
+    if (!apiKey || !apiKey.startsWith('xkeysib-')) {
+      console.error('📧 Brevo API key missing or invalid. Set BREVO_API_KEY on Render.');
       return resolve({ skipped: true });
     }
+
+    console.log(`📧 Sending email to: ${to} | Subject: ${subject}`);
 
     const payload = JSON.stringify({
       sender:  { name: 'Sundara Travels', email: 'droptaxichennai.sr@gmail.com' },
