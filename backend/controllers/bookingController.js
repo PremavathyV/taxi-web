@@ -31,7 +31,7 @@ const createBooking = async (req, res, next) => {
       status: 'Pending',
     });
 
-    // Send emails non-blocking — customer email if email provided
+    // Send emails non-blocking
     Promise.allSettled([
       sendAdminNotification(booking),
       email ? sendCustomerConfirmation(booking) : Promise.resolve(),
