@@ -18,7 +18,7 @@ function sendBrevoEmail({ to, toName, subject, html }) {
     }
 
     const payload = JSON.stringify({
-      sender:  { name: 'Sundara Travels', email: process.env.SMTP_USER || 'b395ca001@smtp-brevo.com' },
+      sender:  { name: 'Sundara Travels', email: 'droptaxichennai.sr@gmail.com' },
       to:      [{ email: to, name: toName || to }],
       subject,
       htmlContent: html,
