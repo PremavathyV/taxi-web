@@ -101,6 +101,12 @@ app.get('/api/health', async (req, res) => {
     env:     process.env.NODE_ENV,
     db:      states[dbState] || 'unknown',
     dbState,
+    smtp: {
+      host: process.env.SMTP_HOST,
+      user: process.env.SMTP_USER,
+      from: process.env.MAIL_FROM,
+      adminNotify: process.env.ADMIN_NOTIFY_EMAIL,
+    },
   });
 });
 
