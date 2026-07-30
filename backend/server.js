@@ -116,14 +116,6 @@ app.use('/api/drivers',  driverRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/contacts', contactRoutes);
 
-// Temporary email test route — remove after debugging
-app.get('/api/test-email', async (req, res) => {
-  try {
-    const nodemailer = require('nodemailer');
-    const t = nodemailer.createTransport({
-      host: process.env.SMTP_HOST, port: parseInt(process.env.SMTP_PORT), secure: false,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
     await t.verify();
     const info = await t.sendMail({
       from: process.env.MAIL_FROM,
@@ -137,8 +129,16 @@ app.get('/api/test-email', async (req, res) => {
   }
 });
 
-// 404
-app.use((req, res) => {
+// Temporary email test route
+app.get('/api/test-email', async (req, res) => {
+  try {
+    const { sendAdminNotification } = require('./utils/mailer');
+    await sendAdminNotification({ name:'Test', mobile:'9444539285', email:'test@test.com', pickup:'Chennai', drop:'Bangalore', journeyDate:new Date(), pickupTime:'09:00', vehicleType:'Sedan', status:'Pending', specialInstructions:'' });
+    res.json({ success: true, message: 'Test email sent!' });
+  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+});
+
+// 404app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 
@@ -162,14 +162,6 @@ process.on('unhandledRejection', (err) => {
 
 module.exports = app;
 
-// Temporary email test route — remove after debugging
-app.get('/api/test-email', async (req, res) => {
-  try {
-    const nodemailer = require('nodemailer');
-    const t = nodemailer.createTransport({
-      host: process.env.SMTP_HOST, port: parseInt(process.env.SMTP_PORT), secure: false,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
     await t.verify();
     const info = await t.sendMail({
       from: process.env.MAIL_FROM,
@@ -182,3 +174,4 @@ app.get('/api/test-email', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
