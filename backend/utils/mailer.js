@@ -11,7 +11,7 @@ const https = require('https');
  */
 function sendBrevoEmail({ to, toName, subject, html }) {
   return new Promise((resolve, reject) => {
-    const apiKey = process.env.BREVO_API_KEY || process.env.SMTP_PASS;
+    const apiKey = (process.env.BREVO_API_KEY || process.env.SMTP_PASS || '').trim().replace(/[^\x20-\x7E]/g, '');
     if (!apiKey || apiKey.includes('your_')) {
       console.log('📧 Email skipped — BREVO_API_KEY not configured');
       return resolve({ skipped: true });
@@ -29,7 +29,7 @@ function sendBrevoEmail({ to, toName, subject, html }) {
       path:     '/v3/smtp/email',
       method:   'POST',
       headers:  {
-        'api-key':       apiKey,
+        'api-key':       Buffer.from(apiKey).toString('ascii').replace(/[^\x20-\x7E]/g, ''),
         'Content-Type':  'application/json',
         'Content-Length': Buffer.byteLength(payload),
       },
