@@ -23,6 +23,7 @@ connectDB();
 const app = express();
 
 /* ── Security ── */
+app.set('trust proxy', 1); // Required for Render/Heroku reverse proxy
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin: [

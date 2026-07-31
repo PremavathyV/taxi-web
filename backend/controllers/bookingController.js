@@ -8,6 +8,7 @@ const Booking = require('../models/Booking');
 const Driver  = require('../models/Driver');
 const Payment = require('../models/Payment');
 const { sendCustomerConfirmation, sendAdminNotification } = require('../utils/mailer');
+const { sendOwnerWhatsApp } = require('../utils/whatsapp');
 
 /* ══════════════════════════════════════
    PUBLIC
@@ -31,13 +32,25 @@ const createBooking = async (req, res, next) => {
       status: 'Pending',
     });
 
-    // Send emails non-blocking
-    Promise.allSettled([
-      sendAdminNotification(booking),
-      email ? sendCustomerConfirmation(booking) : Promise.resolve(),
-    ]).then(results => {
-      results.forEach(r => { if (r.status === 'rejected') console.error('📧 Email error:', r.reason?.message); });
-    });
+    // Step 1: Send admin notification email (non-blocking)
+    sendAdminNotification(booking).catch(err =>
+      console.error('📧 Admin email error:', err.message)
+    );
+
+    // Step 2: Send customer confirmation if email provided
+    if (email) {
+      sendCustomerConfirmation(booking).then(() => {
+        // Step 3: Send WhatsApp to owner only after email succeeds
+        sendOwnerWhatsApp(booking).catch(err =>
+          console.error('📱 WhatsApp error:', err.message)
+        );
+      }).catch(err => console.error('📧 Customer email error:', err.message));
+    } else {
+      // No email — still send WhatsApp
+      sendOwnerWhatsApp(booking).catch(err =>
+        console.error('📱 WhatsApp error:', err.message)
+      );
+    }
 
     return res.status(201).json({
       success: true,
