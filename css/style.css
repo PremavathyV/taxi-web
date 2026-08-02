@@ -989,43 +989,44 @@ h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); font-weight: 700; }
 
 /* Suggestion dropdown */
 .loc-suggestions {
-  position: absolute; top: calc(100% + 5px); left: 0; right: 0;
-  background: var(--card-bg);
-  border: 1.5px solid var(--card-border);
-  border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.16);
-  list-style: none; padding: 6px 0; margin: 0;
-  z-index: 600; max-height: 300px; overflow-y: auto; display: none;
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+  list-style: none; padding: 4px 0; margin: 0;
+  z-index: 600; max-height: 320px; overflow-y: auto; display: none;
 }
+[data-theme="dark"] .loc-suggestions { background: var(--card-bg); border-color: var(--card-border); }
 
-/* Each suggestion item */
+/* Each row — matches Google Places style */
 .loc-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 10px 14px; cursor: pointer;
-  transition: background 0.12s; border-bottom: 1px solid var(--card-border);
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; cursor: pointer;
+  border-bottom: 1px solid #F1F5F9;
+  transition: background 0.1s;
 }
 .loc-item:last-child { border-bottom: none; }
-.loc-item:hover, .loc-item.active { background: rgba(249,115,22,0.07); }
+.loc-item:hover, .loc-item.active { background: #F8FAFC; }
+[data-theme="dark"] .loc-item:hover,
+[data-theme="dark"] .loc-item.active { background: rgba(249,115,22,0.07); }
 
-.loc-item-icon {
-  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
-  background: rgba(249,115,22,0.1); color: var(--accent);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.78rem; margin-top: 1px;
-}
-.loc-item:hover .loc-item-icon, .loc-item.active .loc-item-icon {
-  background: var(--accent); color: #fff;
-}
+/* Pin icon */
+.loc-item-pin { color: #94A3B8; font-size: 0.88rem; flex-shrink: 0; width: 16px; text-align: center; }
+.loc-item:hover .loc-item-pin,
+.loc-item.active .loc-item-pin { color: var(--accent); }
 
-.loc-item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.loc-item-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.loc-item-name strong { color: var(--accent); font-weight: 700; }
-.loc-item-addr { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Text body — inline layout like screenshot */
+.loc-item-body { display: flex; align-items: baseline; gap: 6px; min-width: 0; flex-wrap: wrap; }
+.loc-item-name { font-size: 0.88rem; font-weight: 700; color: #0F172A; white-space: nowrap; }
+.loc-item-name strong { color: var(--accent); }
+[data-theme="dark"] .loc-item-name { color: var(--text-primary); }
+.loc-item-context { font-size: 0.8rem; font-weight: 400; color: #64748B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* State messages */
-.loc-state { display: flex; align-items: center; gap: 8px; padding: 14px 16px; font-size: 0.82rem; color: var(--text-muted); cursor: default; }
+.loc-state { display: flex; align-items: center; gap: 8px; padding: 12px 16px; font-size: 0.82rem; color: #64748B; cursor: default; }
 .loc-state i { color: var(--accent); }
-.loc-empty i  { color: var(--text-muted); }
+.loc-empty i  { color: #94A3B8; }
 
 /* Error */
 .loc-error { border-color: #EF4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,.15) !important; }

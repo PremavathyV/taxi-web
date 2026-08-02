@@ -178,7 +178,7 @@ LocationAutocomplete.prototype._bind = function() {
     self.hidden.value = '';
     var q = self.input.value.trim();
     clearTimeout(self._debounceT);
-    if (!q || q.length < 2) { self._hide(); return; }
+    if (!q || q.length < 1) { self._hide(); return; }
     self._debounceT = setTimeout(function() { self._search(q); }, 300);
   });
 
@@ -305,27 +305,27 @@ LocationAutocomplete.prototype._render = function(features) {
   if (!features || !features.length) { self._hide(); return; }
 
   features.forEach(function(f) {
-    var p    = f.properties || {};
+    var p = f.properties || {};
 
-    /* Primary name — prefer address_line1 or name */
-    var name = p.address_line1 || p.name || (p.formatted || '').split(',')[0];
+    /* Place name — just the locality/area name, not full address */
+    var name = p.name || p.address_line1 || (p.formatted || '').split(',')[0];
 
-    /* Sub-address — city + state for context */
+    /* Context — City, State (like "Chennai, Tamil Nadu") */
     var city  = p.city || p.county || p.state_district || '';
     var state = p.state || '';
-    var addr  = p.address_line2 || (city && state ? city + ', ' + state : city || state || '');
-
-    var type = p.result_type || p.type || '';
-    var icon = self._icon(type, name);
+    var context = '';
+    if (city && state && city !== state) context = city + ', ' + state;
+    else if (state) context = state;
+    else if (city)  context = city;
 
     var li = document.createElement('li');
     li.className = 'loc-item';
     li.setAttribute('role', 'option');
     li.innerHTML =
-      '<span class="loc-item-icon"><i class="fas ' + icon + '"></i></span>' +
+      '<span class="loc-item-pin"><i class="fas fa-map-marker-alt"></i></span>' +
       '<span class="loc-item-body">' +
         '<span class="loc-item-name">' + self._hl(name) + '</span>' +
-        (addr ? '<span class="loc-item-addr">' + addr + '</span>' : '') +
+        (context ? ' <span class="loc-item-context">' + context + '</span>' : '') +
       '</span>';
 
     li.addEventListener('mousedown', function(e) {
