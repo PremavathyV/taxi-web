@@ -27,16 +27,19 @@ function BookingLocationModel() {
 }
 
 BookingLocationModel.prototype.fromGeoapify = function(feature) {
-  var p = feature.properties || {};
-  this.address    = p.formatted || p.name || '';
-  this.placeId    = feature.properties.place_id || '';
-  this.latitude   = String(feature.geometry.coordinates[1] || '');
-  this.longitude  = String(feature.geometry.coordinates[0] || '');
-  this.city       = p.city || p.county || p.state_district || '';
-  this.state      = p.state || '';
+  var p   = feature.properties || {};
+  var geo = feature.geometry   || {};
+  var coords = geo.coordinates || [0, 0];
+
+  this.address    = p.formatted || p.address_line1 || p.name || '';
+  this.placeId    = p.place_id  || '';
+  this.latitude   = String(coords[1] || '');   /* GeoJSON: [lon, lat] */
+  this.longitude  = String(coords[0] || '');
+  this.city       = p.city   || p.county || p.state_district || '';
+  this.state      = p.state  || '';
   this.country    = p.country || 'India';
-  this.postalCode = p.postcode || '';
-  this.confirmed  = true;
+  this.postalCode = p.postcode || p.postalCode || '';
+  this.confirmed  = (this.latitude !== '0' && this.latitude !== '');
   return this;
 };
 
@@ -423,13 +426,14 @@ LocationAutocomplete.prototype._hl = function(text) {
 };
 
 LocationAutocomplete.prototype._select = function(feature, displayName) {
-  var self = this;
+  var self  = this;
   var model = new BookingLocationModel();
   model.fromGeoapify(feature);
 
-  /* If displayName doesn't match the full address, use it for display only */
-  self.input.value  = displayName || model.city || model.address.split(',')[0];
-  self.hidden.value = model.city  || self.input.value;
+  /* Show clean name in input */
+  self.input.value  = displayName || model.city || (model.address.split(',')[0]);
+  /* Store city for static distance table lookup */
+  self.hidden.value = model.city || self.input.value;
   self.model        = model;
 
   self._hide();
@@ -444,7 +448,9 @@ LocationAutocomplete.prototype._select = function(feature, displayName) {
     if (err) err.remove();
   }
 
+  /* Fire callback with full model (has lat/lon) */
   self.onSelect(model);
+  /* Also fire change on hidden input */
   self.hidden.dispatchEvent(new Event('change'));
 };
 
