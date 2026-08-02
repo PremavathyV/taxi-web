@@ -165,7 +165,7 @@ function LocationAutocomplete(opts) {
   this._debounceT  = null;
   this._controller = null;
   this._lastQuery  = '';
-  this._cache      = {};
+  this._cache      = {}; // fresh cache — no stale entries
 
   if (this.input && this.hidden && this.suggest) this._bind();
 }
@@ -306,8 +306,15 @@ LocationAutocomplete.prototype._render = function(features) {
 
   features.forEach(function(f) {
     var p    = f.properties || {};
+
+    /* Primary name — prefer address_line1 or name */
     var name = p.address_line1 || p.name || (p.formatted || '').split(',')[0];
-    var addr = p.address_line2 || (p.formatted || '').split(',').slice(1,4).join(',').trim();
+
+    /* Sub-address — city + state for context */
+    var city  = p.city || p.county || p.state_district || '';
+    var state = p.state || '';
+    var addr  = p.address_line2 || (city && state ? city + ', ' + state : city || state || '');
+
     var type = p.result_type || p.type || '';
     var icon = self._icon(type, name);
 
@@ -332,16 +339,17 @@ LocationAutocomplete.prototype._render = function(features) {
 };
 
 LocationAutocomplete.prototype._icon = function(type, name) {
-  var t = (type + ' ' + (name||'')).toLowerCase();
-  if (/airport|aerodrome/.test(t))            return 'fa-plane';
-  if (/railway|train|junction/.test(t))        return 'fa-train';
-  if (/metro|mrts/.test(t))                    return 'fa-subway';
-  if (/bus.?stop|bus.?stand|depot/.test(t))    return 'fa-bus';
-  if (/hospital|clinic/.test(t))               return 'fa-hospital';
-  if (/school|college|university/.test(t))     return 'fa-graduation-cap';
-  if (/hotel|resort|lodge/.test(t))            return 'fa-hotel';
-  if (/street|road|nagar|salai/.test(t))       return 'fa-road';
-  if (/city|town|district|suburb/.test(t))     return 'fa-city';
+  var t = (type + ' ' + (name || '')).toLowerCase();
+  if (/airport|aerodrome/.test(t))                          return 'fa-plane';
+  if (/railway station|train station|junction/.test(t))     return 'fa-train';
+  if (/metro|mrts|rapid transit/.test(t))                   return 'fa-subway';
+  if (/bus.?stop|bus.?stand|bus.?depot|omni/.test(t))       return 'fa-bus';
+  if (/hospital|clinic|medical|health/.test(t))             return 'fa-hospital';
+  if (/school|college|university|institute/.test(t))        return 'fa-graduation-cap';
+  if (/hotel|resort|lodge|inn/.test(t))                     return 'fa-hotel';
+  if (/street|road|salai|main road|cross/.test(t))          return 'fa-road';
+  if (/suburb|locality|nagar|puram|pet|ur$|ar$/.test(t))   return 'fa-map-pin';
+  if (/city|town|district|municipality|ward/.test(t))       return 'fa-city';
   return 'fa-map-marker-alt';
 };
 
