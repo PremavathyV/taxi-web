@@ -1,19 +1,15 @@
 /**
  * location-service.js – Sundara Travels
  * ─────────────────────────────────────────────────────────────
- * Uber/Ola-style Places Autocomplete using Geoapify API
- * Free tier: 3000 req/day — no billing required
- * Shows: Areas, Localities, Streets, Bus Stops, Railway Stations,
- *        Metro Stations, Landmarks, Airports
- * Restricted to India, Chennai-prioritised
+ * TomTom Fuzzy Search API — Uber/Ola level locality detection
+ * Free: 2,500 req/day — signup: developer.tomtom.com
+ * Fallback: Geoapify → Nominatim (OSM)
  * ─────────────────────────────────────────────────────────────
  */
 'use strict';
 
-/* ── API Key (Geoapify — free, no billing) ───────────────
-   Get your free key at https://myprojects.geoapify.com
-   Current key: public free-tier key                       */
-var GEOAPIFY_KEY = '4dda2d6c7fe0462793ab462db1b57d89';
+var TOMTOM_KEY   = 'YOUR_TOMTOM_API_KEY';   // replace with your key
+var GEOAPIFY_KEY = '4dda2d6c7fe0462793ab462db1b57d89'; // backup
 
 /* ══════════════════════════════════════════════════════════
    BookingLocationModel
@@ -222,28 +218,75 @@ LocationAutocomplete.prototype._highlight = function(items) {
 LocationAutocomplete.prototype._search = function(q) {
   var self = this;
   self._lastQuery = q;
-
   if (self._cache[q]) { self._render(self._cache[q]); return; }
-
   self._showLoading();
-
   if (self._controller) { try { self._controller.abort(); } catch(e) {} }
   self._controller = new AbortController();
 
-  /* Geoapify Geocoding Autocomplete API */
+  if (TOMTOM_KEY && TOMTOM_KEY !== 'YOUR_TOMTOM_API_KEY') {
+    self._tomtomSearch(q);
+  } else {
+    self._geoapifySearch(q);
+  }
+};
+
+/* TomTom Fuzzy Search — primary */
+LocationAutocomplete.prototype._tomtomSearch = function(q) {
+  var self = this;
+  var url = 'https://api.tomtom.com/search/2/search/' +
+    encodeURIComponent(q) + '.json?' +
+    'key=' + TOMTOM_KEY +
+    '&countrySet=IN&lat=13.0827&lon=80.2707' +
+    '&radius=150000&language=en-GB&limit=8&typeahead=true';
+
+  fetch(url, { signal: self._controller.signal })
+    .then(function(res) { if (!res.ok) throw new Error('TomTom ' + res.status); return res.json(); })
+    .then(function(data) {
+      var results = (data && data.results) ? data.results : [];
+      if (!results.length) { self._showEmpty(); return; }
+      var features = results.map(function(r) {
+        var addr = r.address || {};
+        var name = addr.municipalitySubdivision
+          || (r.poi && r.poi.name)
+          || addr.municipality
+          || (addr.freeformAddress || '').split(',')[0];
+        var city  = addr.municipality || addr.municipalitySubdivision || '';
+        var state = addr.countrySubdivision || '';
+        var lat   = r.position ? r.position.lat : '';
+        var lon   = r.position ? r.position.lon : '';
+        return {
+          properties: {
+            name: name, address_line1: name,
+            address_line2: addr.freeformAddress || '',
+            city: city, state: state, country: 'India',
+            postcode: addr.postalCode || '', place_id: r.id || '',
+            result_type: r.type || '',
+          },
+          geometry: { coordinates: [parseFloat(lon)||0, parseFloat(lat)||0] },
+        };
+      });
+      self._cache[q] = features;
+      var keys = Object.keys(self._cache);
+      if (keys.length > 30) delete self._cache[keys[0]];
+      self._render(features);
+    })
+    .catch(function(err) {
+      if (err && err.name === 'AbortError') return;
+      self._geoapifySearch(q);
+    });
+};
+
+/* Geoapify Search — secondary fallback */
+LocationAutocomplete.prototype._geoapifySearch = function(q) {
+  var self = this;
   var url = 'https://api.geoapify.com/v1/geocode/autocomplete?' +
     'text=' + encodeURIComponent(q) +
     '&filter=countrycode:in' +
-    '&bias=proximity:80.2707,13.0827' +   // bias toward Chennai
-    '&limit=8' +
-    '&lang=en' +
-    '&apiKey=' + GEOAPIFY_KEY;
+    '&bias=proximity:80.2707,13.0827' +
+    '&limit=8&lang=en&apiKey=' + GEOAPIFY_KEY;
 
   fetch(url, { signal: self._controller.signal })
-    .then(function(res) {
-      if (!res.ok) throw new Error('Geoapify ' + res.status);
-      return res.json();
-    })
+    .then(function(res) { if (!res.ok) throw new Error('Geoapify ' + res.status); return res.json(); })
     .then(function(data) {
       var features = (data && data.features) ? data.features : [];
       if (features.length) {
@@ -252,12 +295,11 @@ LocationAutocomplete.prototype._search = function(q) {
         if (keys.length > 30) delete self._cache[keys[0]];
         self._render(features);
       } else {
-        self._showEmpty();
+        self._nominatimFallback(q);
       }
     })
     .catch(function(err) {
       if (err && err.name === 'AbortError') return;
-      console.warn('Geoapify error, trying Nominatim fallback:', err.message);
       self._nominatimFallback(q);
     });
 };
@@ -447,5 +489,6 @@ window.SundaraLocation = {
   BookingLocationModel: BookingLocationModel,
   LocationAutocomplete: LocationAutocomplete,
   DistanceService:      DistanceService,
-  setApiKey: function(key) { GEOAPIFY_KEY = key; },
+  setApiKey:    function(key) { GEOAPIFY_KEY = key; },
+  setTomTomKey: function(key) { TOMTOM_KEY = key; },
 };
