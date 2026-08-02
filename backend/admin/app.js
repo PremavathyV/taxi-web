@@ -1,7 +1,7 @@
 ﻿/**
  * backend/admin/app.js  – Sundara Travels Admin Dashboard
  */
-'use strict';
+
 
 /* ══ Page helpers — defined first so they can be called immediately ═══ */
 function showAuth()     {
@@ -16,15 +16,15 @@ function hideDash()     { document.getElementById('dashPage').style.cssText = 'd
 function hideAuth()     { document.getElementById('authPage').style.cssText = 'display:none!important'; }
 
 /* ══ Config ══════════════════════════════════════════════ */
-const API = window.location.hostname === 'localhost' ? '/api' : '/api';
-let TOKEN = '';
-let currentBookingId = null;
-let currentContactId = null;
-let currentPage      = 1;
-let refreshInterval  = null;
+var API = '/api';
+var TOKEN = '';
+var currentBookingId = null;
+var currentContactId = null;
+var currentPage      = 1;
+var refreshInterval  = null;
 
 // Always start at login
-TOKEN = ''; localStorage.removeItem('st_admin_token');
+TOKEN = ''; try { localStorage.removeItem('st_admin_token'); } catch(e2) {}
 showAuth();
 
 /* ══ Server wake-up ping (Render cold start fix) ════════ */
@@ -60,48 +60,50 @@ showAuth();
 }());
 
 /* ══ HTTP Helpers ════════════════════════════════════════ */
-async function req(method, url, body) {
-  const opts = {
-    method,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+function req(method, url, body) {
+  var opts = {
+    method: method,
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN },
   };
   if (body) opts.body = JSON.stringify(body);
-  const res  = await fetch(API + url, opts);
-  const data = await res.json();
-
-  // If 401 on any protected call — force logout
-  if (res.status === 401) {
-    TOKEN = ''; localStorage.removeItem('st_admin_token');
-    hideDash();
-    showAuth();
-    throw new Error('Session expired. Please login again.');
-  }
-
-  if (!res.ok) throw new Error(data.message || 'Request failed');
-  return data;
+  return fetch(API + url, opts).then(function(res) {
+    return res.json().then(function(data) {
+      if (res.status === 401) {
+        TOKEN = '';
+        try { localStorage.removeItem('st_admin_token'); } catch(e) {}
+        hideDash(); showAuth();
+        throw new Error('Session expired. Please login again.');
+      }
+      if (!res.ok) throw new Error(data.message || 'Request failed');
+      return data;
+    });
+  });
 }
-const GET    = url      => req('GET',    url);
-const POST   = (url, b) => req('POST',   url, b);
-const PATCH  = (url, b) => req('PATCH',  url, b);
-const DELETE = url      => req('DELETE', url);
+function GET(url)      { return req('GET',    url, null); }
+function POST(url, b)  { return req('POST',   url, b); }
+function PATCH(url, b) { return req('PATCH',  url, b); }
+function DELETE(url)   { return req('DELETE', url, null); }
 
 /* ══ Toast ═══════════════════════════════════════════════ */
-function toast(msg, ok = true) {
-  const el = document.getElementById('toastEl');
-  el.className = `toast align-items-center text-white border-0 bg-${ok ? 'success' : 'danger'}`;
-  document.getElementById('toastMsg').textContent = msg;
-  bootstrap.Toast.getOrCreateInstance(el, { delay: 3500 }).show();
+function toast(msg, ok) {
+  if (ok === undefined) ok = true;
+  var el = document.getElementById('toastEl');
+  if (!el) return;
+  el.className = 'toast align-items-center text-white border-0 bg-' + (ok ? 'success' : 'danger');
+  var tm = document.getElementById('toastMsg');
+  if (tm) tm.textContent = msg;
+  try { bootstrap.Toast.getOrCreateInstance(el, { delay: 3500 }).show(); } catch(e) {}
 }
 
 /* ══ Clock ═══════════════════════════════════════════════ */
 function startClock() {
-  const el = document.getElementById('currentTime');
-  const tick = () => {
+  var el = document.getElementById('currentTime');
+  var tick = () => {
     if (el) el.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   };
   tick(); setInterval(tick, 30000);
 
-  const dateEl = document.getElementById('dashDate');
+  var dateEl = document.getElementById('dashDate');
   if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 }
 
@@ -189,18 +191,18 @@ document.getElementById('logoutBtn').addEventListener('click', e => {
   hideDash();
   showAuth();
   // Clear login form
-  const emailEl = document.getElementById('loginEmail');
-  const pwdEl   = document.getElementById('loginPassword');
+  var emailEl = document.getElementById('loginEmail');
+  var pwdEl   = document.getElementById('loginPassword');
   if (emailEl) emailEl.value = '';
   if (pwdEl)   pwdEl.value   = '';
-  const errEl = document.getElementById('authError');
+  var errEl = document.getElementById('authError');
   if (errEl) errEl.classList.add('d-none');
 });
 
 function setAdminInfo(data) {
-  const name = data?.name || data?.email || 'Admin';
+  var name = data?.name || data?.email || 'Admin';
   document.getElementById('adminName').textContent = name;
-  const initial = document.getElementById('userInitial');
+  var initial = document.getElementById('userInitial');
   if (initial) initial.textContent = name.charAt(0).toUpperCase();
   // Settings page
   if (document.getElementById('settingsEmail')) document.getElementById('settingsEmail').value = data?.email || '';
@@ -229,7 +231,7 @@ function switchSection(sec) {
   document.querySelectorAll('[data-sec]').forEach(a => a.classList.remove('active'));
   document.querySelector(`[data-sec="${sec}"]`)?.classList.add('active');
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  const secEl = document.getElementById(`sec-${sec}`);
+  var secEl = document.getElementById(`sec-${sec}`);
   if (secEl) secEl.classList.add('active');
   document.getElementById('pageTitle').textContent =
     { dashboard:'Dashboard', bookings:'Booking Management', drivers:'Driver Management',
@@ -258,12 +260,12 @@ async function loadDashboard() {
     const { bookings, drivers, contacts, revenue, recentBookings } = data;
 
     // Update pending badge
-    const pb = document.getElementById('pendingBadge');
+    var pb = document.getElementById('pendingBadge');
     if (pb) { pb.textContent = bookings.pending; pb.style.display = bookings.pending > 0 ? '' : 'none'; }
-    const cb = document.getElementById('contactBadge');
+    var cb = document.getElementById('contactBadge');
     if (cb) cb.style.display = contacts.unresolved > 0 ? '' : 'none';
 
-    const stats = [
+    var stats = [
       { label:'Total Bookings',   val:bookings.total,     icon:'fa-calendar-check', bg:'#FFF7E6', ic:'#F59E0B', sec:'bookings', filter:'' },
       { label:"Today's Bookings", val:bookings.today,     icon:'fa-clock',          bg:'#EFF6FF', ic:'#3B82F6', sec:'bookings', filter:'' },
       { label:'Pending',          val:bookings.pending,   icon:'fa-hourglass-half', bg:'#FFFBEB', ic:'#D97706', sec:'bookings', filter:'Pending' },
@@ -305,7 +307,7 @@ function statCardClick(sec, filter) {
   if (filter && sec === 'bookings') {
     switchSection(sec);
     setTimeout(() => {
-      const sel = document.getElementById('bookingFilter');
+      var sel = document.getElementById('bookingFilter');
       if (sel) { sel.value = filter; loadBookings(); }
     }, 100);
   } else {
@@ -316,17 +318,17 @@ function statCardClick(sec, filter) {
 /* ══ BOOKINGS ════════════════════════════════════════════ */
 async function loadBookings(page = 1) {
   currentPage = page;
-  const search = document.getElementById('bookingSearch').value.trim();
-  const status = document.getElementById('bookingFilter').value;
-  const date   = document.getElementById('bookingDateFilter').value;
-  let url = `/bookings?page=${page}&limit=15`;
+  var search = document.getElementById('bookingSearch').value.trim();
+  var status = document.getElementById('bookingFilter').value;
+  var date   = document.getElementById('bookingDateFilter').value;
+  var url = `/bookings?page=${page}&limit=15`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
   if (status) url += `&status=${status}`;
   if (date)   url += `&date=${date}`;
 
   try {
     const { data, total, pages } = await GET(url);
-    const countEl = document.getElementById('bookingCount');
+    var countEl = document.getElementById('bookingCount');
     if (countEl) countEl.textContent = `${total} total`;
 
     document.getElementById('bookingsTbl').innerHTML =
@@ -365,7 +367,7 @@ async function viewBooking(id) {
   currentBookingId = id;
   try {
     const { data } = await GET(`/bookings/${id}`);
-    const b = data;
+    var b = data;
 
     document.getElementById('bookingStatusUpdate').value = b.status;
     if (document.getElementById('bookingAdminNote')) document.getElementById('bookingAdminNote').value = b.adminNote || '';
@@ -390,15 +392,15 @@ async function viewBooking(id) {
       ${b.payment ? `<div class="note-box mt-2" style="border-color:#D1FAE5"><strong>Payment:</strong> ₹${b.payment.amount} via ${b.payment.paymentMethod} — <span class="badge-status st-${b.payment.paymentStatus}">${b.payment.paymentStatus}</span></div>` : ''}`;
 
     // Timeline
-    const statusOrder = ['Pending','Confirmed','Completed'];
-    const tl = document.getElementById('bookingTimeline');
+    var statusOrder = ['Pending','Confirmed','Completed'];
+    var tl = document.getElementById('bookingTimeline');
     if (tl) {
-      const steps = [
+      var steps = [
         { s:'Pending',   label:'Booking Received',  icon:'fa-plus-circle' },
         { s:'Confirmed', label:'Booking Confirmed',  icon:'fa-check-circle' },
         { s:'Completed', label:'Trip Completed',     icon:'fa-flag-checkered' },
       ];
-      const curIdx = statusOrder.indexOf(b.status);
+      var curIdx = statusOrder.indexOf(b.status);
       tl.innerHTML = steps.map((step, i) => `
         <div class="tl-item">
           <div class="tl-dot ${i <= curIdx && b.status !== 'Cancelled' ? 'done' : ''} ${b.status==='Cancelled' && step.s==='Confirmed' ? 'cancel' : ''}"></div>
@@ -409,14 +411,14 @@ async function viewBooking(id) {
 
     // Driver dropdown
     const { data: drivers } = await GET('/drivers');
-    const sel = document.getElementById('assignDriverSelect');
+    var sel = document.getElementById('assignDriverSelect');
     if (sel) {
       sel.innerHTML = '<option value="">Assign Driver…</option>' +
         drivers.map(d => `<option value="${d._id}" ${b.driverId?._id===d._id?'selected':''}>${d.name} – ${d.vehicleType.split(' ')[0]} (${d.isAvailable?'Available':'Busy'})</option>`).join('');
     }
 
     // Change vehicle
-    const cv = document.getElementById('changeVehicleSelect');
+    var cv = document.getElementById('changeVehicleSelect');
     if (cv) cv.value = b.vehicleType || '';
 
     bootstrap.Modal.getOrCreateInstance(document.getElementById('bookingModal')).show();
@@ -424,13 +426,13 @@ async function viewBooking(id) {
 }
 
 async function saveBookingUpdate() {
-  const status   = document.getElementById('bookingStatusUpdate').value;
-  const driverId = document.getElementById('assignDriverSelect').value;
-  const vehicle  = document.getElementById('changeVehicleSelect').value;
-  const note     = document.getElementById('bookingAdminNote')?.value || '';
+  var status   = document.getElementById('bookingStatusUpdate').value;
+  var driverId = document.getElementById('assignDriverSelect').value;
+  var vehicle  = document.getElementById('changeVehicleSelect').value;
+  var note     = document.getElementById('bookingAdminNote')?.value || '';
 
   try {
-    const updates = { status };
+    var updates = { status };
     if (note !== undefined) updates.adminNote = note;
     if (vehicle) updates.vehicleType = vehicle;
     await PATCH(`/bookings/${currentBookingId}`, updates);
@@ -464,16 +466,16 @@ async function delBooking(id) {
 
 /* ══ DRIVERS ═════════════════════════════════════════════ */
 async function loadDrivers() {
-  const search = document.getElementById('driverSearch')?.value.trim() || '';
-  const avail  = document.getElementById('driverAvailFilter')?.value || '';
-  let url = '/drivers';
-  const params = [];
+  var search = document.getElementById('driverSearch')?.value.trim() || '';
+  var avail  = document.getElementById('driverAvailFilter')?.value || '';
+  var url = '/drivers';
+  var params = [];
   if (avail !== '') params.push(`available=${avail}`);
   if (params.length) url += '?' + params.join('&');
 
   try {
     const { data } = await GET(url);
-    const filtered = search
+    var filtered = search
       ? data.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.phone.includes(search))
       : data;
 
@@ -508,7 +510,7 @@ async function loadDrivers() {
 function openDriverModal() {
   document.getElementById('driverModalTitle').innerHTML = '<i class="fas fa-user-plus me-2 text-warning"></i>Add Driver';
   ['driverId','driverName','driverPhone','driverEmail','driverAddress','driverVehicleNo','driverLicense'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
+    var el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('driverVehicleType').value = 'Sedan';
 }
@@ -527,8 +529,8 @@ function editDriver(d) {
 }
 
 async function saveDriver() {
-  const id = document.getElementById('driverId').value;
-  const payload = {
+  var id = document.getElementById('driverId').value;
+  var payload = {
     name:          document.getElementById('driverName').value.trim(),
     phone:         document.getElementById('driverPhone').value.trim(),
     email:         document.getElementById('driverEmail').value.trim(),
@@ -563,11 +565,11 @@ async function toggleAvailability(id, current) {
 }
 
 /* ══ PAYMENTS ════════════════════════════════════════════ */
-let currentPaymentBookingId = null;
+var currentPaymentBookingId = null;
 
 async function loadPayments() {
-  const statusF = document.getElementById('paymentStatusFilter')?.value || '';
-  let url = '/payments';
+  var statusF = document.getElementById('paymentStatusFilter')?.value || '';
+  var url = '/payments';
   if (statusF) url += `?status=${statusF}`;
 
   try {
@@ -594,7 +596,7 @@ async function loadPayments() {
 
     document.getElementById('paymentsTbl').innerHTML =
       payments.map(p => {
-        const b = p.bookingId || {};
+        var b = p.bookingId || {};
         return `<tr>
           <td><code style="font-size:.7rem;background:#F1F5F9;padding:2px 6px;border-radius:4px">${(b._id||'').toString().slice(-6)||'—'}</code></td>
           <td>${b.name||'—'}</td>
@@ -623,7 +625,7 @@ async function markPaid(id) {
 }
 
 async function editPaymentStatus(id, current) {
-  const status = prompt('Update payment status (pending/paid/failed/refunded):', current);
+  var status = prompt('Update payment status (pending/paid/failed/refunded):', current);
   if (!status) return;
   try {
     await PATCH(`/payments/${id}`, { paymentStatus: status.toLowerCase() });
@@ -642,7 +644,7 @@ function openPaymentModal(bookingId, bookingDisplay) {
 }
 
 async function savePayment() {
-  const amount = parseFloat(document.getElementById('paymentAmount').value);
+  var amount = parseFloat(document.getElementById('paymentAmount').value);
   if (!amount || amount <= 0) { toast('Enter a valid amount.', false); return; }
   try {
     await POST('/payments', {
@@ -659,13 +661,13 @@ async function savePayment() {
 
 /* ══ CONTACTS ════════════════════════════════════════════ */
 async function loadContacts() {
-  const resolved = document.getElementById('contactFilter')?.value || '';
-  let url = '/contacts';
+  var resolved = document.getElementById('contactFilter')?.value || '';
+  var url = '/contacts';
   if (resolved !== '') url += `?resolved=${resolved}`;
   try {
     const { data } = await GET(url);
-    const unresolved = data.filter(c => !c.isResolved).length;
-    const cb = document.getElementById('contactBadge');
+    var unresolved = data.filter(c => !c.isResolved).length;
+    var cb = document.getElementById('contactBadge');
     if (cb) { cb.textContent = unresolved; cb.style.display = unresolved > 0 ? '' : 'none'; }
 
     document.getElementById('contactsTbl').innerHTML =
@@ -706,7 +708,7 @@ async function viewContact(id) {
       <div class="note-box">${c.message}</div>
       ${c.adminNote ? `<div class="note-box mt-2" style="border-color:#93C5FD"><strong>Admin Note:</strong> ${c.adminNote}</div>` : ''}`;
 
-    const btn = document.getElementById('contactResolveBtn');
+    var btn = document.getElementById('contactResolveBtn');
     if (btn) {
       btn.innerHTML = c.isResolved
         ? '<i class="fas fa-undo me-1"></i>Mark Unresolved'
@@ -799,7 +801,7 @@ async function loadReports() {
           <div class="table-responsive">
             <table><thead><tr><th>Vehicle</th><th>Total Bookings</th><th>Share</th></tr></thead>
             <tbody>${(bookRpt.byVehicle||[]).map(v => {
-              const pct = bookRpt.totalBookings > 0 ? Math.round((v.count/bookRpt.totalBookings)*100) : 0;
+              var pct = bookRpt.totalBookings > 0 ? Math.round((v.count/bookRpt.totalBookings)*100) : 0;
               return `<tr>
                 <td>${v._id||'—'}</td>
                 <td><strong>${v.count}</strong></td>
@@ -830,22 +832,22 @@ async function loadSettings() {
 }
 
 async function changePassword() {
-  const current  = document.getElementById('currentPwd').value;
-  const newPwd   = document.getElementById('newPwd').value;
-  const confirm  = document.getElementById('confirmPwd').value;
+  var current  = document.getElementById('currentPwd').value;
+  var newPwd   = document.getElementById('newPwd').value;
+  var confirm  = document.getElementById('confirmPwd').value;
   if (!current || !newPwd) { toast('Please fill all password fields.', false); return; }
   if (newPwd.length < 6)   { toast('New password must be at least 6 characters.', false); return; }
   if (newPwd !== confirm)  { toast('Passwords do not match.', false); return; }
   try {
     await PATCH('/admin/password', { currentPassword: current, newPassword: newPwd });
     toast('Password changed successfully.');
-    ['currentPwd','newPwd','confirmPwd'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    ['currentPwd','newPwd','confirmPwd'].forEach(id => { var el=document.getElementById(id); if(el) el.value=''; });
   } catch (err) { toast(err.message, false); }
 }
 
 async function saveSettings() {
-  const name  = document.getElementById('settingsName')?.value.trim();
-  const phone = document.getElementById('settingsPhone')?.value.trim();
+  var name  = document.getElementById('settingsName')?.value.trim();
+  var phone = document.getElementById('settingsPhone')?.value.trim();
   toast('Settings saved.'); // Extend when settings API is added
 }
 
@@ -860,12 +862,12 @@ function fmtDateTime(d) {
 }
 
 function buildPager(containerId, current, pages, loadFn) {
-  const container = document.getElementById(containerId);
+  var container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = '';
   if (pages <= 1) return;
-  for (let i = 1; i <= pages; i++) {
-    const btn = document.createElement('button');
+  for (var i = 1; i <= pages; i++) {
+    var btn = document.createElement('button');
     btn.textContent = i;
     btn.className = i === current ? 'active' : '';
     btn.onclick = () => loadFn(i);
@@ -874,9 +876,12 @@ function buildPager(containerId, current, pages, loadFn) {
 }
 
 // Add btn-xs style dynamically
-const xs = document.createElement('style');
+var xs = document.createElement('style');
 xs.textContent = `.btn-xs{padding:2px 8px!important;font-size:.72rem!important;border-radius:6px!important;}`;
 document.head.appendChild(xs);
+
+
+
 
 
 
