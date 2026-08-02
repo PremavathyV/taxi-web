@@ -977,6 +977,52 @@ h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); font-weight: 700; }
 .wb-sug-loading { color: var(--text-muted) !important; font-size: 0.78rem !important; cursor: default !important; justify-content: center !important; padding: 12px 14px !important; gap: 8px !important; }
 .wb-sug-loading i { color: var(--accent); }
 
+/* Location Autocomplete (location-service.js) */
+.loc-autocomplete-wrap { position: relative; }
+.loc-ac-input { padding-left: 36px !important; }
+.loc-ac-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 0.82rem; }
+.loc-ac-icon.pickup-ac { color: var(--accent); }
+.loc-ac-icon.drop-ac   { color: #2563EB; }
+.loc-suggestions {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--card-bg); border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-sm); box-shadow: 0 12px 36px rgba(0,0,0,0.15);
+  list-style: none; padding: 6px 0; margin: 0; z-index: 500;
+  max-height: 280px; overflow-y: auto; display: none;
+}
+.loc-sug-item {
+  padding: 10px 14px; font-size: 0.83rem; color: var(--text-primary);
+  cursor: pointer; transition: background 0.12s;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.loc-sug-icon { color: var(--text-muted); font-size: 0.8rem; margin-top: 2px; flex-shrink: 0; width: 15px; text-align: center; }
+.loc-sug-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.loc-sug-name { font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.loc-sug-name strong { color: var(--accent); font-weight: 700; }
+.loc-sug-sub  { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.loc-sug-item:hover, .loc-sug-item.active { background: rgba(249,115,22,0.07); }
+.loc-sug-item:hover .loc-sug-icon, .loc-sug-item.active .loc-sug-icon { color: var(--accent); }
+.loc-sug-state { padding: 12px 14px; font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; cursor: default; }
+.loc-sug-state i { color: var(--accent); }
+.loc-sug-empty i { color: var(--text-muted); }
+.loc-sug-err   { color: #EF4444 !important; }
+.loc-sug-err i { color: #EF4444 !important; }
+.loc-error { border-color: #EF4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,.15) !important; }
+.loc-err-msg { font-size: 0.72rem; color: #EF4444; margin-top: 3px; display: block; }
+
+/* Distance bar */
+.loc-distance-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: rgba(37,99,235,0.06); border: 1px solid rgba(37,99,235,0.15);
+  border-radius: var(--radius-sm); padding: 8px 14px; margin-bottom: 14px;
+  font-size: 0.8rem; color: var(--text-secondary); animation: locBarIn 0.3s ease both;
+}
+@keyframes locBarIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+.loc-distance-bar strong { color: var(--text-primary); }
+.loc-distance-bar i { color: #2563EB; margin-right: 4px; }
+.loc-dist-sep { color: var(--text-muted); }
+.loc-dist-src { font-size: 0.68rem; color: var(--text-muted); margin-left: auto; }
+
 /* Fare card */
 .wb-fare-card { background: linear-gradient(135deg,rgba(249,115,22,0.06),rgba(37,99,235,0.04)); border: 1.5px solid rgba(249,115,22,0.25); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; transition: var(--transition); }
 .wb-fare-card.wb-fare-in { animation: wbFareSlide 0.4s cubic-bezier(.2,.8,.4,1.1) both; }

@@ -185,10 +185,14 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
         submitBtn.querySelector('.wbBtn-inner').innerHTML = origInner;
         submitBtn.disabled = false; busy = false;
         form.reset();
-        // clear autocomplete visible inputs
-        const pi = document.getElementById('wbPickupInput'); if (pi) pi.value = '';
-        const di = document.getElementById('wbDropInput');   if (di) di.value = '';
-        document.getElementById('wbFareCard').style.display = 'none';
+        // clear location autocomplete fields
+        window._pickupAC?.clear(); window._dropAC?.clear();
+        window._pickupModel = null; window._dropModel = null;
+        window._currentDistKm = null;
+        const distBar = document.getElementById('locDistBar');
+        if (distBar) distBar.style.display = 'none';
+        const fareCard = document.getElementById('wbFareCard');
+        if (fareCard) fareCard.style.display = 'none';
         if (fDate) fDate.min = todayStr();
         if (vehiclePicker) vehiclePicker.querySelectorAll('.wb-vehicle-opt').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-checked','false'); });
         if (nameCounter) { nameCounter.textContent = '0 / 50'; nameCounter.className = 'wb-char-counter'; }
@@ -214,11 +218,18 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     if (!email)                   { wbErr(fEmail, 'Please enter your email address.'); ok = false; }
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { wbErr(fEmail, 'Enter a valid email address.'); ok = false; }
 
-    if (!fPickup.value.trim()) { wbErr(document.getElementById('wbPickupInput'), 'Please select a pickup city.'); ok = false; }
-    if (!fDrop.value.trim())   { wbErr(document.getElementById('wbDropInput'),   'Please select a drop city.'); ok = false; }
+    if (!fPickup.value.trim()) {
+      window._pickupAC?.showError('Please select a pickup location from the list.');
+      ok = false;
+    }
+    if (!fDrop.value.trim()) {
+      window._dropAC?.showError('Please select a drop location from the list.');
+      ok = false;
+    }
     if (fPickup.value.trim() && fDrop.value.trim() &&
         fPickup.value.trim().toLowerCase() === fDrop.value.trim().toLowerCase()) {
-      wbErr(document.getElementById('wbDropInput'), 'Pickup and drop city cannot be the same.'); ok = false;
+      window._dropAC?.showError('Pickup and drop cannot be the same location.');
+      ok = false;
     }
 
     if (!fDate.value) { wbErr(fDate, 'Please select journey date.'); ok = false; }
@@ -325,345 +336,114 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
 
 
 /* ══════════════════════════════════════════════════════
-   LOCATION AUTOCOMPLETE — OpenStreetMap Nominatim
-   Real place search (cities, areas, landmarks) — no API key needed
+   LOCATION AUTOCOMPLETE — powered by location-service.js
+   LocationAutocomplete + DistanceService + BookingLocationModel
    ══════════════════════════════════════════════════════ */
 (function () {
+  if (!window.SundaraLocation) return;
+  const { LocationAutocomplete, DistanceService } = window.SundaraLocation;
 
-  /* Fallback city list shown when offline or before first API response */
-  const FALLBACK = [
-    'Chennai','Bangalore','Coimbatore','Madurai','Trichy','Salem',
-    'Pondicherry','Vellore','Tirunelveli','Erode','Ooty','Kodaikanal',
-    'Kumbakonam','Thanjavur','Kanyakumari','Tirupati','Hyderabad',
-    'Kochi','Munnar','Mysore','Nagercoil','Dindigul','Hosur','Tirupur',
-    'Coonoor','Palani','Pollachi','Thoothukudi','Rameswaram','Chidambaram',
-  ];
+  let _osrmCtrl = null;
+  window._currentDistKm = null;
 
-  function buildLocationSearch(inputId, hiddenId, suggestId) {
-    const input   = document.getElementById(inputId);
-    const hidden  = document.getElementById(hiddenId);
-    const suggest = document.getElementById(suggestId);
-    if (!input || !hidden || !suggest) return;
-
-    let activeIdx  = -1;
-    let debounceT  = null;
-    let lastQuery  = '';
-    let controller = null; // AbortController for in-flight requests
-
-    /* ── Render suggestion list ─────────────────────── */
-    function renderList(items) {
-      suggest.innerHTML = '';
-      activeIdx = -1;
-      if (!items.length) { suggest.style.display = 'none'; return; }
-
-      items.forEach(item => {
-        const li  = document.createElement('li');
-        li.setAttribute('role', 'option');
-
-        const name    = item.name    || '';
-        const subtext = item.subtext || '';
-        const type    = item.type    || '';
-        const icon    = getIcon(type);
-
-        li.innerHTML = `
-          <span class="wb-sug-icon">${icon}</span>
-          <span class="wb-sug-text">
-            <span class="wb-sug-name">${highlight(name, lastQuery)}</span>
-            ${subtext ? `<span class="wb-sug-sub">${subtext}</span>` : ''}
-          </span>`;
-
-        li.addEventListener('mousedown', e => { e.preventDefault(); selectPlace(item); });
-        suggest.appendChild(li);
-      });
-      suggest.style.display = 'block';
-    }
-
-    /* ── Icon based on place type ───────────────────── */
-    function getIcon(type) {
-      const t = (type || '').toLowerCase();
-      if (['city','town','village','suburb','municipality'].some(x => t.includes(x)))
-        return '<i class="fas fa-city"></i>';
-      if (['airport','aerodrome'].some(x => t.includes(x)))
-        return '<i class="fas fa-plane"></i>';
-      if (['railway','station','junction'].some(x => t.includes(x)))
-        return '<i class="fas fa-train"></i>';
-      if (['hotel','lodge','resort'].some(x => t.includes(x)))
-        return '<i class="fas fa-hotel"></i>';
-      return '<i class="fas fa-map-marker-alt"></i>';
-    }
-
-    /* ── Highlight matched query in name ────────────── */
-    function highlight(text, q) {
-      if (!q) return text;
-      const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-      return text.replace(re, '<strong>$1</strong>');
-    }
-
-    /* ── Fetch from Nominatim ───────────────────────── */
-    async function fetchNominatim(q) {
-      if (controller) controller.abort();
-      controller = new AbortController();
-
-      const url = `https://nominatim.openstreetmap.org/search?` +
-        `q=${encodeURIComponent(q)}&` +
-        `countrycodes=in&` +           // India only
-        `addressdetails=1&` +
-        `limit=8&` +
-        `format=json`;
-
-      const res  = await fetch(url, {
-        signal: controller.signal,
-        headers: { 'Accept-Language': 'en' },
-      });
-      const data = await res.json();
-
-      return data.map(p => {
-        const addr = p.address || {};
-        const rawName = addr.city || addr.town || addr.village || addr.county ||
-                     addr.state_district || p.display_name.split(',')[0];
-        const normalized = normalizeCity(rawName);
-        const parts = p.display_name.split(',').slice(1, 3).join(',').trim();
-        return {
-          name:     normalized,
-          subtext:  parts,
-          fullName: p.display_name,
-          type:     p.type || p.class || '',
-          lat: p.lat,
-          lon: p.lon,
-        };
-      });
-    }
-
-    /* ── Fallback static list ───────────────────────── */
-    function getFallback(q) {
-      const ql = q.toLowerCase();
-      return FALLBACK
-        .filter(c => c.toLowerCase().startsWith(ql))
-        .concat(FALLBACK.filter(c => !c.toLowerCase().startsWith(ql) && c.toLowerCase().includes(ql)))
-        .slice(0, 8)
-        .map(c => ({ name: c, subtext: 'Tamil Nadu / South India', type: 'city' }));
-    }
-
-    /* ── Show loading spinner in list ──────────────── */
-    function showLoading() {
-      suggest.innerHTML = '<li class="wb-sug-loading"><i class="fas fa-circle-notch fa-spin"></i> Searching…</li>';
-      suggest.style.display = 'block';
-    }
-
-    /* ── Main search trigger ────────────────────────── */
-    async function search(q) {
-      lastQuery = q;
-      if (q.length < 2) { suggest.style.display = 'none'; return; }
-
-      // Show fallback instantly, then fetch real results
-      const fb = getFallback(q);
-      if (fb.length) renderList(fb);
-      else showLoading();
-
-      try {
-        const results = await fetchNominatim(q);
-        if (results.length) renderList(results);
-        else if (!fb.length) suggest.style.display = 'none';
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          // keep fallback shown if network fails
-          if (!fb.length) suggest.style.display = 'none';
-        }
-      }
-    }
-
-    /* ── Normalize place name to match distances table ─ */
-    function normalizeCity(raw) {
-      if (!raw) return raw;
-      // Map of common Nominatim variants → canonical name in distances table
-      const MAP = {
-        'bengaluru':'Bangalore','bengaluru urban':'Bangalore','bengaluru rural':'Bangalore',
-        'greater chennai corporation':'Chennai','chennai district':'Chennai',
-        'coimbatore district':'Coimbatore','coimbatore corporation':'Coimbatore',
-        'madurai district':'Madurai','madurai corporation':'Madurai',
-        'tiruchirappalli':'Trichy','tiruchirappalli district':'Trichy',
-        'trichy':'Trichy','tiruchirapalli':'Trichy',
-        'salem district':'Salem',
-        'puducherry':'Pondicherry','pondicherry':'Pondicherry',
-        'vellore district':'Vellore',
-        'tirunelveli district':'Tirunelveli','tirunelveli corporation':'Tirunelveli',
-        'erode district':'Erode',
-        'udhagamandalam':'Ooty','ootacamund':'Ooty','ooty':'Ooty',
-        'kodaikanal':'Kodaikanal',
-        'kumbakonam':'Kumbakonam',
-        'thanjavur district':'Thanjavur','tanjore':'Thanjavur',
-        'kanyakumari district':'Kanyakumari','cape comorin':'Kanyakumari',
-        'tirupati':'Tirupati','tirupathi':'Tirupati',
-        'hyderabad district':'Hyderabad',
-        'ernakulam':'Kochi','cochin':'Kochi','kochi':'Kochi',
-        'munnar':'Munnar',
-        'mysuru':'Mysore','mysore':'Mysore','mysuru district':'Mysore',
-        'nagercoil':'Nagercoil','kanyakumari':'Kanyakumari',
-        'dindigul district':'Dindigul',
-        'hosur':'Hosur',
-        'tiruppur':'Tirupur','tirupur':'Tirupur',
-        'coonoor':'Coonoor',
-        'palani':'Palani',
-        'pollachi':'Pollachi',
-        'thoothukudi':'Thoothukudi','tuticorin':'Thoothukudi',
-        'rameswaram':'Rameswaram',
-        'chidambaram':'Chidambaram',
-      };
-      const lower = raw.toLowerCase().trim();
-      if (MAP[lower]) return MAP[lower];
-      // Try matching known city names as substrings
-      const KNOWN = [
-        'Chennai','Bangalore','Coimbatore','Madurai','Trichy','Salem',
-        'Pondicherry','Vellore','Tirunelveli','Erode','Ooty','Kodaikanal',
-        'Kumbakonam','Thanjavur','Kanyakumari','Tirupati','Hyderabad',
-        'Kochi','Munnar','Mysore','Nagercoil','Dindigul','Hosur','Tirupur',
-        'Coonoor','Palani','Pollachi','Thoothukudi','Rameswaram','Chidambaram',
-      ];
-      for (const city of KNOWN) {
-        if (lower.includes(city.toLowerCase())) return city;
-      }
-      // Return original (capitalized first letter) for display
-      return raw.split(',')[0].trim();
-    }
-
-    /* ── Select a place ─────────────────────────────── */
-    function selectPlace(item) {
-      const normalized = normalizeCity(item.name);
-      input.value  = normalized;          // show clean city name
-      hidden.value = normalized;          // used by fare calc
-      suggest.style.display = 'none';
-      suggest.innerHTML = '';
-      activeIdx = -1;
-      // clear error
-      input.classList.remove('wb-error');
-      input.style.borderColor = '';
-      input.style.boxShadow   = '';
-      const wrap = input.closest('.wb-autocomplete-wrap')?.parentElement;
-      wrap?.querySelector('.wb-err-msg')?.remove();
-      // trigger fare calc
-      hidden.dispatchEvent(new Event('change'));
-    }
-
-    /* ── Events ─────────────────────────────────────── */
-    input.addEventListener('input', function () {
-      hidden.value = '';
-      const q = this.value.trim();
-      clearTimeout(debounceT);
-      if (!q) { suggest.style.display = 'none'; return; }
-      debounceT = setTimeout(() => search(q), 300); // 300ms debounce
-    });
-
-    input.addEventListener('focus', function () {
-      if (this.value.trim().length >= 2) search(this.value.trim());
-    });
-
-    input.addEventListener('keydown', function (e) {
-      const items = suggest.querySelectorAll('li:not(.wb-sug-loading)');
-      if (!items.length || suggest.style.display === 'none') return;
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        activeIdx = Math.min(activeIdx + 1, items.length - 1);
-        items.forEach((li, i) => li.classList.toggle('active', i === activeIdx));
-        items[activeIdx]?.scrollIntoView({ block: 'nearest' });
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        activeIdx = Math.max(activeIdx - 1, 0);
-        items.forEach((li, i) => li.classList.toggle('active', i === activeIdx));
-        items[activeIdx]?.scrollIntoView({ block: 'nearest' });
-      } else if (e.key === 'Enter') {
-        if (activeIdx >= 0 && items[activeIdx]) {
-          e.preventDefault();
-          items[activeIdx].dispatchEvent(new MouseEvent('mousedown'));
-        }
-      } else if (e.key === 'Escape') {
-        suggest.style.display = 'none';
-        activeIdx = -1;
-      }
-    });
-
-    document.addEventListener('click', e => {
-      if (!input.contains(e.target) && !suggest.contains(e.target)) {
-        suggest.style.display = 'none';
-      }
-    });
+  /* Update distance bar shown between the two fields */
+  function updateDistBar(distKm, durText, source) {
+    const bar   = document.getElementById('locDistBar');
+    const kmEl  = document.getElementById('locDistKm');
+    const durEl = document.getElementById('locDistDur');
+    const srcEl = document.getElementById('locDistSrc');
+    if (!bar) return;
+    if (!distKm) { bar.style.display = 'none'; return; }
+    kmEl.innerHTML  = `<i class="fas fa-road"></i> <strong>${distKm} km</strong>`;
+    durEl.innerHTML = `<i class="fas fa-clock"></i> <strong>${durText}</strong>`;
+    if (srcEl) srcEl.textContent = source === 'osrm' ? '· real driving distance' : '· estimated';
+    bar.style.display = 'flex';
   }
 
-  buildLocationSearch('wbPickupInput', 'wbPickup', 'wbPickupSuggestions');
-  buildLocationSearch('wbDropInput',   'wbDrop',   'wbDropSuggestions');
+  /* After both locations selected — fetch real distance then calc fare */
+  async function onBothSelected() {
+    const p = window._pickupModel;
+    const d = window._dropModel;
+    if (!p?.isValid() || !d?.isValid()) { updateDistBar(null); return; }
 
+    /* 1. Static distance — instant */
+    const staticDist = DistanceService.getStaticDistance(p.city, d.city);
+    if (staticDist) {
+      window._currentDistKm = staticDist;
+      updateDistBar(staticDist, DistanceService.formatDuration(staticDist * 90), 'static');
+      window.triggerFareCalc?.();
+    }
+
+    /* 2. Real OSRM driving distance — async */
+    try {
+      if (_osrmCtrl) _osrmCtrl.abort();
+      _osrmCtrl = new AbortController();
+      const osrm = await DistanceService.getDrivingDistance(
+        parseFloat(p.latitude), parseFloat(p.longitude),
+        parseFloat(d.latitude), parseFloat(d.longitude),
+        _osrmCtrl.signal
+      );
+      if (osrm) {
+        window._currentDistKm = osrm.distKm;
+        updateDistBar(osrm.distKm, osrm.durationText, osrm.source);
+        window.triggerFareCalc?.();
+      }
+    } catch { /* AbortError or network — keep static */ }
+  }
+
+  /* Build autocomplete for pickup */
+  window._pickupAC = new LocationAutocomplete({
+    inputId:   'wbPickupInput',
+    hiddenId:  'wbPickup',
+    suggestId: 'wbPickupSuggestions',
+    modelKey:  'pickup',
+    onSelect:  (model) => { window._pickupModel = model; onBothSelected(); },
+  });
+
+  /* Build autocomplete for drop */
+  window._dropAC = new LocationAutocomplete({
+    inputId:   'wbDropInput',
+    hiddenId:  'wbDrop',
+    suggestId: 'wbDropSuggestions',
+    modelKey:  'drop',
+    onSelect:  (model) => { window._dropModel = model; onBothSelected(); },
+  });
+
+  window.triggerFareCalc = () => {};
 }());
+
+
+/* ══════════════════════════════════════════════════════
+   TRIP TYPE TOGGLE
+   ══════════════════════════════════════════════════════ */
 (function () {
   const toggle = document.getElementById('wbTripToggle');
   const hidden = document.getElementById('wbTripType');
   if (!toggle || !hidden) return;
   toggle.querySelectorAll('.wb-trip-opt').forEach(btn => {
     btn.addEventListener('click', function () {
-      toggle.querySelectorAll('.wb-trip-opt').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-checked','false'); });
+      toggle.querySelectorAll('.wb-trip-opt').forEach(b => {
+        b.classList.remove('selected'); b.setAttribute('aria-checked','false');
+      });
       this.classList.add('selected'); this.setAttribute('aria-checked','true');
       hidden.value = this.dataset.value;
-      // re-trigger fare calc
-      document.getElementById('wbPickup')?.dispatchEvent(new Event('change'));
+      window.triggerFareCalc?.();
     });
   });
 }());
 
+
 /* ══════════════════════════════════════════════════════
    FARE ESTIMATOR
+   Uses real OSRM distance (window._currentDistKm)
    ══════════════════════════════════════════════════════ */
 (function () {
-  /* Rates per km + driver bata */
   const RATES = {
-    'Sedan':  { oneWay: 15, roundTrip: 14, bata: 400,  min: 1000, seats: 4 },
-    'SUV':    { oneWay: 20, roundTrip: 18, bata: 500,  min: 1400, seats: 6 },
-    'Innova': { oneWay: 21, roundTrip: 19, bata: 500,  min: 1600, seats: 7 },
+    'Sedan':  { oneWay: 15, roundTrip: 14, bata: 400, min: 1000 },
+    'SUV':    { oneWay: 20, roundTrip: 18, bata: 500, min: 1400 },
+    'Innova': { oneWay: 21, roundTrip: 19, bata: 500, min: 1600 },
   };
 
-  /* Distances in km between city pairs (one-way) */
-  const DIST = {
-    'chennai-bangalore':    350, 'chennai-coimbatore':   497,
-    'chennai-madurai':      462, 'chennai-trichy':       330,
-    'chennai-salem':        340, 'chennai-pondicherry':  162,
-    'chennai-vellore':      140, 'chennai-tirunelveli':  625,
-    'chennai-erode':        400, 'chennai-ooty':         545,
-    'chennai-kodaikanal':   528, 'chennai-kumbakonam':   290,
-    'chennai-thanjavur':    315, 'chennai-kanyakumari':  700,
-    'chennai-tirupati':     140, 'chennai-hyderabad':    625,
-    'chennai-kochi':        693, 'chennai-munnar':       655,
-    'chennai-mysore':       480,
-    'bangalore-coimbatore': 360, 'bangalore-madurai':    450,
-    'bangalore-trichy':     380, 'bangalore-salem':      220,
-    'bangalore-pondicherry':310, 'bangalore-vellore':    210,
-    'bangalore-tirunelveli':570, 'bangalore-ooty':       270,
-    'bangalore-kodaikanal': 470, 'bangalore-hyderabad':  570,
-    'bangalore-kochi':      540, 'bangalore-mysore':     145,
-    'bangalore-munnar':     470, 'bangalore-tirupati':   260,
-    'bangalore-kumbakonam': 430, 'bangalore-thanjavur':  450,
-    'bangalore-kanyakumari':740, 'bangalore-erode':      290,
-    'coimbatore-madurai':   210, 'coimbatore-trichy':    200,
-    'coimbatore-ooty':       90, 'coimbatore-kodaikanal':180,
-    'coimbatore-kochi':     190, 'coimbatore-munnar':    145,
-    'coimbatore-salem':     160, 'coimbatore-mysore':    255,
-    'madurai-trichy':       140, 'madurai-tirunelveli':  170,
-    'madurai-kanyakumari':  247, 'madurai-kodaikanal':   120,
-    'madurai-kumbakonam':   220, 'madurai-thanjavur':    175,
-    'trichy-kumbakonam':     95, 'trichy-thanjavur':      58,
-    'trichy-salem':         160, 'trichy-vellore':       225,
-    'salem-erode':           60, 'pondicherry-vellore':  155,
-    'ooty-kodaikanal':      280, 'ooty-mysore':          124,
-    'hyderabad-tirupati':   520, 'kochi-munnar':         130,
-  };
-
-  /* Build symmetric lookup — both directions */
-  const distances = {};
-  Object.entries(DIST).forEach(([k, v]) => {
-    distances[k] = v;
-    const [a, b] = k.split('-');
-    distances[`${b}-${a}`] = v;
-  });
-
-  const pickupEl  = document.getElementById('wbPickup');
-  const dropEl    = document.getElementById('wbDrop');
   const vehicleEl = document.getElementById('wbVehicle');
   const tripEl    = document.getElementById('wbTripType');
   const fareCard  = document.getElementById('wbFareCard');
@@ -672,53 +452,48 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
   const fareAmt   = document.getElementById('wbFareAmount');
   const fareBadge = document.getElementById('wbFareBadge');
 
-  if (!pickupEl || !dropEl || !vehicleEl || !fareCard) return;
+  if (!vehicleEl || !fareCard) return;
 
   function calcFare() {
-    const pickup  = pickupEl.value.trim();
-    const drop    = dropEl.value.trim();
+    const pickup  = document.getElementById('wbPickup')?.value.trim();
+    const drop    = document.getElementById('wbDrop')?.value.trim();
     const vehicle = vehicleEl.value;
     const trip    = tripEl?.value || 'one_way';
+    const distKm  = window._currentDistKm;
 
     fareCard.style.display = 'none';
-    if (!pickup || !drop || !vehicle || pickup === drop) return;
+    if (!pickup || !drop || !vehicle || !distKm || pickup === drop) return;
 
-    const key  = `${pickup.toLowerCase()}-${drop.toLowerCase()}`;
-    const dist = distances[key];
-    if (!dist) return; // route not in table
-
-    const r        = RATES[vehicle];
-    const rate     = trip === 'round_trip' ? r.roundTrip : r.oneWay;
-    const totalDist= trip === 'round_trip' ? dist * 2 : dist;
-    const baseFare = Math.max(totalDist * rate, r.min);
-    const totalFare= baseFare + r.bata;
-    const isRT     = trip === 'round_trip';
+    const r      = RATES[vehicle];
+    const isRT   = trip === 'round_trip';
+    const rate   = isRT ? r.roundTrip : r.oneWay;
+    const total  = isRT ? distKm * 2 : distKm;
+    const base   = Math.max(total * rate, r.min);
+    const grand  = base + r.bata;
 
     fareBadge.textContent = isRT ? 'Round Trip' : 'One Way';
     fareBadge.className   = 'wb-fare-badge' + (isRT ? ' rt' : '');
 
     fareRoute.innerHTML = `
       <span class="wb-fare-city"><i class="fas fa-location-dot"></i> ${pickup}</span>
-      <span class="wb-fare-arrow"><i class="fas fa-arrow-right"></i>${isRT ? '<i class="fas fa-arrow-left ms-1"></i>' : ''}</span>
+      <span class="wb-fare-arrow"><i class="fas fa-arrow-right"></i>${isRT ? '<i class="fas fa-arrow-left ms-1"></i>':''}</span>
       <span class="wb-fare-city"><i class="fas fa-flag-checkered"></i> ${drop}</span>
-      <span class="wb-fare-dist">${isRT ? totalDist : dist} km${isRT ? ' (both ways)' : ''}</span>`;
+      <span class="wb-fare-dist">${total} km${isRT ? ' (both ways)':''}</span>`;
 
     fareBreak.innerHTML = `
-      <div class="wb-fare-row"><span>Distance</span><span>${isRT ? dist + ' km × 2' : dist + ' km'}</span></div>
+      <div class="wb-fare-row"><span>Distance</span><span>${isRT ? distKm+' km × 2' : distKm+' km'}</span></div>
       <div class="wb-fare-row"><span>Rate / km</span><span>₹${rate}</span></div>
-      <div class="wb-fare-row"><span>Base Fare</span><span>₹${baseFare.toLocaleString('en-IN')}</span></div>
+      <div class="wb-fare-row"><span>Base Fare</span><span>₹${base.toLocaleString('en-IN')}</span></div>
       <div class="wb-fare-row"><span>Driver Bata</span><span>₹${r.bata}</span></div>`;
 
-    fareAmt.textContent = '₹' + totalFare.toLocaleString('en-IN');
+    fareAmt.textContent = '₹' + grand.toLocaleString('en-IN');
     fareCard.style.display = 'block';
-    // animate in
     fareCard.classList.remove('wb-fare-in');
     void fareCard.offsetWidth;
     fareCard.classList.add('wb-fare-in');
   }
 
-  [pickupEl, dropEl, vehicleEl, tripEl].forEach(el => {
-    if (el) { el.addEventListener('change', calcFare); el.addEventListener('input', calcFare); }
-  });
+  window.triggerFareCalc = calcFare;
+  vehicleEl.addEventListener('change', calcFare);
 }());
 

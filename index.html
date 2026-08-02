@@ -199,28 +199,36 @@
               <input type="hidden" id="wbTripType" value="one_way" />
             </div>
 
-            <!-- Row 2: Pickup + Drop (autocomplete typeahead) -->
+            <!-- Row 2: Pickup + Drop (LocationAutocomplete) -->
             <div class="form-row-two">
               <div class="form-group-custom">
-                <label for="wbPickupInput"><i class="fas fa-map-marker-alt"></i> Pickup City</label>
-                <div class="wb-autocomplete-wrap">
-                  <input type="text" id="wbPickupInput" class="form-input-custom wb-autocomplete-input"
-                         placeholder="Type city name…" autocomplete="off" required />
-                  <span class="wb-ac-icon pickup-ac"><i class="fas fa-location-dot"></i></span>
+                <label for="wbPickupInput"><i class="fas fa-map-marker-alt"></i> Pickup Location</label>
+                <div class="loc-autocomplete-wrap">
+                  <span class="loc-ac-icon pickup-ac"><i class="fas fa-location-dot"></i></span>
+                  <input type="text" id="wbPickupInput" class="form-input-custom loc-ac-input"
+                         placeholder="City, area or landmark…" autocomplete="off" required />
                   <input type="hidden" id="wbPickup" />
-                  <ul class="wb-suggestions" id="wbPickupSuggestions" role="listbox" aria-label="Pickup city suggestions"></ul>
+                  <ul class="loc-suggestions" id="wbPickupSuggestions" role="listbox" aria-label="Pickup suggestions"></ul>
                 </div>
               </div>
               <div class="form-group-custom">
-                <label for="wbDropInput"><i class="fas fa-flag-checkered"></i> Drop City</label>
-                <div class="wb-autocomplete-wrap">
-                  <input type="text" id="wbDropInput" class="form-input-custom wb-autocomplete-input"
-                         placeholder="Type city name…" autocomplete="off" required />
-                  <span class="wb-ac-icon drop-ac"><i class="fas fa-location-dot"></i></span>
+                <label for="wbDropInput"><i class="fas fa-flag-checkered"></i> Drop Location</label>
+                <div class="loc-autocomplete-wrap">
+                  <span class="loc-ac-icon drop-ac"><i class="fas fa-location-dot"></i></span>
+                  <input type="text" id="wbDropInput" class="form-input-custom loc-ac-input"
+                         placeholder="City, area or landmark…" autocomplete="off" required />
                   <input type="hidden" id="wbDrop" />
-                  <ul class="wb-suggestions" id="wbDropSuggestions" role="listbox" aria-label="Drop city suggestions"></ul>
+                  <ul class="loc-suggestions" id="wbDropSuggestions" role="listbox" aria-label="Drop suggestions"></ul>
                 </div>
               </div>
+            </div>
+
+            <!-- Distance & Duration info bar (shown after both selected) -->
+            <div class="loc-distance-bar" id="locDistBar" style="display:none">
+              <span id="locDistKm"><i class="fas fa-road"></i> <strong>—</strong></span>
+              <span class="loc-dist-sep">·</span>
+              <span id="locDistDur"><i class="fas fa-clock"></i> <strong>—</strong></span>
+              <span class="loc-dist-src" id="locDistSrc"></span>
             </div>
 
             <!-- Row 3: Date + Time -->
@@ -1060,6 +1068,7 @@
 <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script src="./js/animations.js"></script>
+<script src="./js/location-service.js"></script>
 <script src="./js/booking.js"></script>
 <script src="./js/main.js"></script>
 </body>
