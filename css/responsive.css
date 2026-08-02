@@ -96,9 +96,8 @@
   .wbv-sub { display: none; }
   .wb-confirm-box { padding: 30px 20px 26px; }
 
-  .float-whatsapp { bottom: 136px; right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
-  .float-call     { bottom: 82px;  right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
-  .float-chat     { bottom: 28px;  right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
+  .float-whatsapp { bottom: 90px;  right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
+  .float-call     { bottom: 36px;  right: 14px; width: 46px; height: 46px; font-size: 1.1rem; }
   .float-tooltip  { display: none; }
   .sticky-book-bar { display: block; }
   .main-footer { padding-bottom: 72px; }
@@ -126,7 +125,7 @@
 
 /* ── Print ── */
 @media print {
-  .sticky-book-bar,.float-whatsapp,.float-call,.float-chat,.back-to-top,#mainNav { display: none !important; }
+  .sticky-book-bar,.float-whatsapp,.float-call,.back-to-top,#mainNav { display: none !important; }
   body { background: #fff !important; color: #000 !important; }
 }
 
