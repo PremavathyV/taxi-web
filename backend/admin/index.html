@@ -132,24 +132,92 @@ tbody tr:hover{background:#FAFBFF;}
   .main{margin-left:0 !important;}
   .menu-btn{display:block!important;}
   .overlay{display:block!important;}
-}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199;}
-@media(max-width:576px){
-  .content{padding:16px;}
-  .page-header{margin-bottom:14px;}
-  .filter-bar{flex-direction:column;align-items:stretch;}
-  .filter-bar input,.filter-bar select,.filter-bar button{width:100%;}
+  .topbar{padding:0 16px;}
+  .content{padding:16px 12px;}
+  .stat-val{font-size:1.4rem;}
+  .card-box-header{padding:12px 14px;}
+  thead th,tbody td{padding:9px 10px;font-size:.78rem;}
   .form-row{grid-template-columns:1fr;}
+  .modal-dialog{margin:8px;}
   .modal-footer{flex-direction:column;gap:8px;}
   .modal-footer .d-flex{flex-direction:column;gap:6px;width:100%;}
-  .modal-footer select,.modal-footer button{width:100%!important;}
-  .stat-val{font-size:1.3rem;}
+  .modal-footer select,.modal-footer button{width:100%!important;max-width:100%!important;}
   .detail-grid{grid-template-columns:1fr 1fr;}
-  .auth-card{padding:28px 20px;margin:16px;}
-  table{font-size:.75rem;}
-  thead th,tbody td{padding:8px 10px;}
-  .tbl-actions{flex-wrap:wrap;}
+  .page-header{flex-direction:column;align-items:flex-start;gap:8px;}
+  .page-header .btn{width:100%;}
+  .filter-bar{flex-direction:column;align-items:stretch;}
+  .filter-bar input,.filter-bar select,.filter-bar button{width:100%!important;}
+  .pager{padding:10px 14px;flex-wrap:wrap;}
+  .tbl-actions{flex-wrap:wrap;gap:3px;}
+  .revenue-box .rv-val{font-size:1.5rem;}
 }
+
+@media(max-width:576px){
+  :root{--topbar-h:56px;}
+  .auth-card{padding:28px 18px;margin:12px;}
+  .auth-logo h2{font-size:1.3rem;}
+  .content{padding:12px 10px;}
+  .stat-card{padding:14px;gap:10px;}
+  .stat-icon{width:42px;height:42px;font-size:1rem;}
+  .stat-val{font-size:1.2rem;}
+  .stat-lbl{font-size:.65rem;}
+  /* Make tables scroll horizontally */
+  .table-responsive{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{min-width:540px;font-size:.75rem;}
+  thead th,tbody td{padding:8px 8px;font-size:.72rem;white-space:nowrap;}
+  .tbl-actions{flex-wrap:nowrap;}
+  .btn-xs{padding:3px 7px;font-size:.7rem;}
+  /* Card boxes */
+  .card-box-header{padding:10px 12px;}
+  .card-box-header h6{font-size:.82rem;}
+  /* Detail grid */
+  .detail-grid{grid-template-columns:1fr;}
+  .detail-item span{font-size:.82rem;}
+  /* Modal full screen on mobile */
+  .modal-dialog{margin:0;max-width:100%;min-height:100%;}
+  .modal-content{border-radius:0;min-height:100vh;}
+  .modal-body{padding:16px 14px;}
+  .modal-header{padding:14px 16px;}
+  .modal-footer{padding:12px 14px;flex-direction:column;gap:8px;}
+  .modal-footer select,.modal-footer button{width:100%!important;}
+  /* Topbar */
+  .topbar{padding:0 12px;height:var(--topbar-h);}
+  .topbar h5{font-size:.85rem;}
+  #adminName,#currentTime{display:none;}
+  /* Sidebar nav links bigger tap targets */
+  .sidebar-nav a{padding:13px 18px;font-size:.88rem;}
+  /* Page headers */
+  .page-header{margin-bottom:12px;}
+  .page-header h5{font-size:.9rem;}
+  /* Filter bar */
+  .filter-bar{gap:8px;margin-bottom:12px;}
+  .filter-bar input,.filter-bar select{font-size:.8rem;padding:8px 10px;}
+  /* Booking timeline */
+  .booking-timeline{padding-left:20px;}
+  /* Revenue cards */
+  .revenue-box{padding:16px;}
+  .revenue-box .rv-val{font-size:1.4rem;}
+  /* Form inputs */
+  .form-input{font-size:.85rem;padding:10px 12px;}
+  /* Settings */
+  .col-lg-6{width:100%!important;}
+  /* Empty state */
+  .empty-state{padding:32px 16px;}
+  .empty-state i{font-size:2rem;}
+  /* Pager */
+  .pager{justify-content:center;gap:4px;}
+  .pager button{width:30px;height:30px;font-size:.72rem;}
+  /* Badges */
+  .badge-status{font-size:.62rem;padding:2px 7px;}
+  code{font-size:.68rem!important;}
+}
+
+@media(max-width:380px){
+  .stat-card{flex-direction:column;text-align:center;padding:12px;}
+  .stat-icon{margin:0 auto;}
+  table{min-width:480px;}
+}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199;}
 
 /* ── MISC ── */
 .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
