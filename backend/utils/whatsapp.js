@@ -1,4 +1,4 @@
-/**
+﻿/**
  * utils/whatsapp.js
  * Sends WhatsApp notification to owner via CallMeBot API (free, no approval needed)
  * Setup: https://www.callmebot.com/blog/free-api-whatsapp-messages/
@@ -65,7 +65,7 @@ function sendCallMeBotWhatsApp(phone, message) {
  */
 const sendOwnerWhatsApp = async (booking) => {
   const rawNumber = process.env.OWNER_WHATSAPP_NUMBER || '';
-  // Accept formats: whatsapp:+919444539285  OR  +919444539285  OR  919444539285
+  // Accept formats: whatsapp:+917639103970  OR  +917639103970  OR  917639103970
   const ownerPhone = rawNumber.replace(/[^0-9]/g, '');
 
   if (!ownerPhone) {
@@ -96,3 +96,4 @@ const sendOwnerWhatsApp = async (booking) => {
 };
 
 module.exports = { sendOwnerWhatsApp };
+

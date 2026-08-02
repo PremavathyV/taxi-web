@@ -70,7 +70,7 @@ app.get('/api/test-email', async (req, res) => {
   try {
     const { sendAdminNotification } = require('./utils/mailer');
     await sendAdminNotification({
-      name: 'Test User', mobile: '9444539285', email: 'test@test.com',
+      name: 'Test User', mobile: '7639103970', email: 'test@test.com',
       pickup: 'Chennai', drop: 'Bangalore', journeyDate: new Date(),
       pickupTime: '09:00', vehicleType: 'Sedan', status: 'Pending', specialInstructions: '',
     });
@@ -99,3 +99,4 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} [${process.env.NODE_ENV}]`));
 process.on('unhandledRejection', (err) => { console.error('💥', err.message); server.close(() => process.exit(1)); });
 module.exports = app;
+

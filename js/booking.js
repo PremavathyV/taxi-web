@@ -13,7 +13,10 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
 /* ══════════════════════════════════════════════════════
    WHATSAPP BOOKING FORM  (#whatsappBookForm)
    ══════════════════════════════════════════════════════ */
-(function () {  const form          = document.getElementById('whatsappBookForm');
+(function () {
+  const WHATSAPP = '917639103970';
+
+  const form          = document.getElementById('whatsappBookForm');
   if (!form) return;
 
   const fName         = document.getElementById('wbFullName');
@@ -155,21 +158,40 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
       ].join('');
     }
     if (overlay) { overlay.removeAttribute('hidden'); void overlay.offsetWidth; overlay.classList.add('wb-overlay-in'); }
-    showToastMsg('✅ Booking confirmed! We will contact you on WhatsApp shortly.');
+    showToastMsg('✅ Booking confirmed! Opening WhatsApp…');
 
-    /* Auto-reset form after showing confirmation — no manual WA send needed.
-       The backend sends WhatsApp notification to the owner automatically via Twilio. */
+    /* Build WhatsApp message */
+    const msg = [
+      '🚕 *SUNDARA TRAVELS – Booking Request*', '',
+      `👤 *Name:*      ${nameVal}`,
+      `📱 *Mobile:*    +91 ${mobileVal}`,
+      `📧 *Email:*     ${emailVal}`,
+      `📍 *Pickup:*    ${pickupVal}`,
+      `🏁 *Drop:*      ${dropVal}`,
+      `📅 *Date:*      ${formattedDate}`,
+      `🕐 *Time:*      ${formattedTime}`,
+      `🚗 *Vehicle:*   ${vehicleVal}`,
+      messageVal ? `💬 *Message:*   ${messageVal}` : '',
+      '', '✅ Please confirm availability.',
+    ].filter(l => l !== '').join('\n');
+
+    const waURL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
+
+    /* Open WhatsApp pre-filled — user taps Send */
     setTimeout(() => {
-      if (overlay) { overlay.classList.remove('wb-overlay-in'); setTimeout(() => overlay.setAttribute('hidden', ''), 350); }
-      submitBtn.querySelector('.wbBtn-inner').innerHTML = origInner;
-      submitBtn.disabled = false; busy = false;
-      form.reset();
-      if (fDate) fDate.min = todayStr();
-      if (vehiclePicker) vehiclePicker.querySelectorAll('.wb-vehicle-opt').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-checked','false'); });
-      if (nameCounter) { nameCounter.textContent = '0 / 50'; nameCounter.className = 'wb-char-counter'; }
-      if (mobileStatus) { mobileStatus.innerHTML = ''; mobileStatus.className = 'wb-mobile-status'; }
-      [fName, fMobile, fEmail, fPickup, fDrop, fDate, fTime, fVehicle].forEach(wbClear);
-    }, 3000);
+      window.open(waURL, '_blank', 'noopener,noreferrer');
+      setTimeout(() => {
+        if (overlay) { overlay.classList.remove('wb-overlay-in'); setTimeout(() => overlay.setAttribute('hidden', ''), 350); }
+        submitBtn.querySelector('.wbBtn-inner').innerHTML = origInner;
+        submitBtn.disabled = false; busy = false;
+        form.reset();
+        if (fDate) fDate.min = todayStr();
+        if (vehiclePicker) vehiclePicker.querySelectorAll('.wb-vehicle-opt').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-checked','false'); });
+        if (nameCounter) { nameCounter.textContent = '0 / 50'; nameCounter.className = 'wb-char-counter'; }
+        if (mobileStatus) { mobileStatus.innerHTML = ''; mobileStatus.className = 'wb-mobile-status'; }
+        [fName, fMobile, fEmail, fPickup, fDrop, fDate, fTime, fVehicle].forEach(wbClear);
+      }, 1500);
+    }, 1800);
   });
 
   /* Validation */
