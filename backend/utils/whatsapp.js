@@ -1,57 +1,61 @@
 /**
  * utils/whatsapp.js
- * Twilio WhatsApp API – sends automatic booking notification to owner
- * No customer action required.
+ * Sends WhatsApp notification to owner via CallMeBot API (free, no approval needed)
+ * Setup: https://www.callmebot.com/blog/free-api-whatsapp-messages/
+ *
+ * One-time setup for owner:
+ *   Save +34 644 82 22 57 in contacts as "CallMeBot"
+ *   Send: "I allow callmebot to send me messages"  to that number on WhatsApp
+ *   You will receive your personal CALLMEBOT_API_KEY in reply
  */
 
 const https = require('https');
 
 /**
- * Send WhatsApp message via Twilio API
+ * Send WhatsApp message via CallMeBot free API
  */
-function sendTwilioWhatsApp(to, body) {
+function sendCallMeBotWhatsApp(phone, message) {
   return new Promise((resolve, reject) => {
-    const sid   = (process.env.TWILIO_ACCOUNT_SID   || '').trim();
-    const token = (process.env.TWILIO_AUTH_TOKEN     || '').trim();
-    const from  = (process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886').trim();
+    const apiKey = (process.env.CALLMEBOT_API_KEY || '').trim();
+    const phoneNum = phone.replace(/[^0-9]/g, ''); // strip non-digits
 
-    if (!sid || !token || sid.includes('YOUR_') || !sid.startsWith('AC')) {
-      console.log('📱 WhatsApp skipped — TWILIO_ACCOUNT_SID not configured.');
-      return resolve({ skipped: true });
+    if (!apiKey) {
+      console.warn('📱 WA skipped — CALLMEBOT_API_KEY not set in .env');
+      return resolve({ skipped: true, reason: 'no_api_key' });
+    }
+    if (!phoneNum) {
+      console.warn('📱 WA skipped — OWNER_WHATSAPP_NUMBER not set in .env');
+      return resolve({ skipped: true, reason: 'no_phone' });
     }
 
-    const toNumber = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
+    const encoded = encodeURIComponent(message);
+    const path = `/whatsapp.php?phone=${phoneNum}&text=${encoded}&apikey=${apiKey}`;
 
-    const params = new URLSearchParams({ From: from, To: toNumber, Body: body });
-    const auth   = Buffer.from(`${sid}:${token}`).toString('base64');
+    console.log(`📱 Sending WA to +${phoneNum} via CallMeBot…`);
 
     const options = {
-      hostname: 'api.twilio.com',
-      path:     `/2010-04-01/Accounts/${sid}/Messages.json`,
-      method:   'POST',
-      headers:  {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type':  'application/x-www-form-urlencoded',
-        'Content-Length': Buffer.byteLength(params.toString()),
-      },
+      hostname: 'api.callmebot.com',
+      path,
+      method: 'GET',
     };
 
     const req = https.request(options, res => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
-        const parsed = JSON.parse(data || '{}');
+        console.log(`📱 CallMeBot response [${res.statusCode}]: ${data.slice(0, 120)}`);
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          console.log(`📱 WhatsApp sent to ${to} — SID: ${parsed.sid}`);
-          resolve(parsed);
+          resolve({ success: true, response: data });
         } else {
-          reject(new Error(`Twilio ${res.statusCode}: ${parsed.message || data}`));
+          reject(new Error(`CallMeBot ${res.statusCode}: ${data.slice(0, 200)}`));
         }
       });
     });
 
-    req.on('error', reject);
-    req.write(params.toString());
+    req.on('error', err => {
+      console.error('📱 CallMeBot request error:', err.message);
+      reject(err);
+    });
     req.end();
   });
 }
@@ -60,9 +64,12 @@ function sendTwilioWhatsApp(to, body) {
  * Send booking notification to owner's WhatsApp
  */
 const sendOwnerWhatsApp = async (booking) => {
-  const ownerNumber = process.env.OWNER_WHATSAPP_NUMBER;
-  if (!ownerNumber) {
-    console.log('📱 WhatsApp skipped — OWNER_WHATSAPP_NUMBER not set.');
+  const rawNumber = process.env.OWNER_WHATSAPP_NUMBER || '';
+  // Accept formats: whatsapp:+919444539285  OR  +919444539285  OR  919444539285
+  const ownerPhone = rawNumber.replace(/[^0-9]/g, '');
+
+  if (!ownerPhone) {
+    console.warn('📱 WA skipped — OWNER_WHATSAPP_NUMBER not set.');
     return;
   }
 
@@ -71,23 +78,21 @@ const sendOwnerWhatsApp = async (booking) => {
   });
 
   const msg = [
-    '🚖 *NEW TAXI BOOKING*',
+    '🚖 NEW TAXI BOOKING – Sundara Travels',
     '',
-    `*Booking ID:*     ${booking._id}`,
-    `*Customer Name:*  ${booking.name}`,
-    `*Phone Number:*   +91 ${booking.mobile}`,
-    `*Email Address:*  ${booking.email || '—'}`,
-    `*Pickup Location:* ${booking.pickup}`,
-    `*Destination:*    ${booking.drop}`,
-    `*Journey Date:*   ${dateStr}`,
-    `*Pickup Time:*    ${booking.pickupTime}`,
-    `*Vehicle Type:*   ${booking.vehicleType}`,
-    `*Add. Message:*   ${booking.specialInstructions || '—'}`,
-    `*Booking Status:* ${booking.status}`,
-    `*Created Time:*   ${new Date(booking.createdAt).toLocaleString('en-IN')}`,
+    `Name:    ${booking.name}`,
+    `Phone:   +91 ${booking.mobile}`,
+    `Email:   ${booking.email || '—'}`,
+    `Pickup:  ${booking.pickup}`,
+    `Drop:    ${booking.drop}`,
+    `Date:    ${dateStr}`,
+    `Time:    ${booking.pickupTime}`,
+    `Vehicle: ${booking.vehicleType}`,
+    `Note:    ${booking.specialInstructions || '—'}`,
+    `Status:  ${booking.status}`,
   ].join('\n');
 
-  await sendTwilioWhatsApp(ownerNumber, msg);
+  await sendCallMeBotWhatsApp(ownerPhone, msg);
 };
 
 module.exports = { sendOwnerWhatsApp };
