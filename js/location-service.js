@@ -236,8 +236,8 @@ LocationAutocomplete.prototype._tomtomSearch = function(q) {
   var url = 'https://api.tomtom.com/search/2/search/' +
     encodeURIComponent(q) + '.json?' +
     'key=' + TOMTOM_KEY +
-    '&countrySet=IN&lat=13.0827&lon=80.2707' +
-    '&radius=150000&language=en-GB&limit=8&typeahead=true';
+    '&countrySet=IN' +
+    '&language=en-GB&limit=8&typeahead=true';
 
   fetch(url, { signal: self._controller.signal })
     .then(function(res) { if (!res.ok) throw new Error('TomTom ' + res.status); return res.json(); })
