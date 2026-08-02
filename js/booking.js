@@ -210,11 +210,11 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     if (!email)                   { wbErr(fEmail, 'Please enter your email address.'); ok = false; }
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { wbErr(fEmail, 'Enter a valid email address.'); ok = false; }
 
-    if (!fPickup.value.trim()) { wbErr(fPickup, 'Please enter pickup location.'); ok = false; }
-    if (!fDrop.value.trim())   { wbErr(fDrop,   'Please enter drop location.'); ok = false; }
+    if (!fPickup.value.trim()) { wbErr(fPickup, 'Please select pickup city.'); ok = false; }
+    if (!fDrop.value.trim())   { wbErr(fDrop,   'Please select drop city.'); ok = false; }
     if (fPickup.value.trim() && fDrop.value.trim() &&
         fPickup.value.trim().toLowerCase() === fDrop.value.trim().toLowerCase()) {
-      wbErr(fDrop, 'Pickup and drop cannot be the same.'); ok = false;
+      wbErr(fDrop, 'Pickup and drop city cannot be the same.'); ok = false;
     }
 
     if (!fDate.value) { wbErr(fDate, 'Please select journey date.'); ok = false; }
@@ -320,35 +320,134 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
 }());
 
 /* ══════════════════════════════════════════════════════
-   FARE ESTIMATOR (booking section)
+   TRIP TYPE TOGGLE
    ══════════════════════════════════════════════════════ */
 (function () {
-  const rates = { 'Sedan': { rate: 15, min: 1000 }, 'SUV': { rate: 20, min: 1400 }, 'Innova': { rate: 21, min: 1600 } };
-  const distances = {
-    'chennai-bangalore': 350, 'bangalore-chennai': 350, 'chennai-coimbatore': 500,
-    'coimbatore-chennai': 500, 'chennai-madurai': 460, 'madurai-chennai': 460,
-    'chennai-trichy': 330, 'trichy-chennai': 330, 'coimbatore-ooty': 90,
-    'pondicherry-chennai': 160, 'chennai-pondicherry': 160,
+  const toggle = document.getElementById('wbTripToggle');
+  const hidden = document.getElementById('wbTripType');
+  if (!toggle || !hidden) return;
+  toggle.querySelectorAll('.wb-trip-opt').forEach(btn => {
+    btn.addEventListener('click', function () {
+      toggle.querySelectorAll('.wb-trip-opt').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-checked','false'); });
+      this.classList.add('selected'); this.setAttribute('aria-checked','true');
+      hidden.value = this.dataset.value;
+      // re-trigger fare calc
+      document.getElementById('wbPickup')?.dispatchEvent(new Event('change'));
+    });
+  });
+}());
+
+/* ══════════════════════════════════════════════════════
+   FARE ESTIMATOR
+   ══════════════════════════════════════════════════════ */
+(function () {
+  /* Rates per km + driver bata */
+  const RATES = {
+    'Sedan':  { oneWay: 15, roundTrip: 14, bata: 400,  min: 1000, seats: 4 },
+    'SUV':    { oneWay: 20, roundTrip: 18, bata: 500,  min: 1400, seats: 6 },
+    'Innova': { oneWay: 21, roundTrip: 19, bata: 500,  min: 1600, seats: 7 },
   };
+
+  /* Distances in km between city pairs (one-way) */
+  const DIST = {
+    'chennai-bangalore':    350, 'chennai-coimbatore':   497,
+    'chennai-madurai':      462, 'chennai-trichy':       330,
+    'chennai-salem':        340, 'chennai-pondicherry':  162,
+    'chennai-vellore':      140, 'chennai-tirunelveli':  625,
+    'chennai-erode':        400, 'chennai-ooty':         545,
+    'chennai-kodaikanal':   528, 'chennai-kumbakonam':   290,
+    'chennai-thanjavur':    315, 'chennai-kanyakumari':  700,
+    'chennai-tirupati':     140, 'chennai-hyderabad':    625,
+    'chennai-kochi':        693, 'chennai-munnar':       655,
+    'chennai-mysore':       480,
+    'bangalore-coimbatore': 360, 'bangalore-madurai':    450,
+    'bangalore-trichy':     380, 'bangalore-salem':      220,
+    'bangalore-pondicherry':310, 'bangalore-vellore':    210,
+    'bangalore-tirunelveli':570, 'bangalore-ooty':       270,
+    'bangalore-kodaikanal': 470, 'bangalore-hyderabad':  570,
+    'bangalore-kochi':      540, 'bangalore-mysore':     145,
+    'bangalore-munnar':     470, 'bangalore-tirupati':   260,
+    'bangalore-kumbakonam': 430, 'bangalore-thanjavur':  450,
+    'bangalore-kanyakumari':740, 'bangalore-erode':      290,
+    'coimbatore-madurai':   210, 'coimbatore-trichy':    200,
+    'coimbatore-ooty':       90, 'coimbatore-kodaikanal':180,
+    'coimbatore-kochi':     190, 'coimbatore-munnar':    145,
+    'coimbatore-salem':     160, 'coimbatore-mysore':    255,
+    'madurai-trichy':       140, 'madurai-tirunelveli':  170,
+    'madurai-kanyakumari':  247, 'madurai-kodaikanal':   120,
+    'madurai-kumbakonam':   220, 'madurai-thanjavur':    175,
+    'trichy-kumbakonam':     95, 'trichy-thanjavur':      58,
+    'trichy-salem':         160, 'trichy-vellore':       225,
+    'salem-erode':           60, 'pondicherry-vellore':  155,
+    'ooty-kodaikanal':      280, 'ooty-mysore':          124,
+    'hyderabad-tirupati':   520, 'kochi-munnar':         130,
+  };
+
+  /* Build symmetric lookup — both directions */
+  const distances = {};
+  Object.entries(DIST).forEach(([k, v]) => {
+    distances[k] = v;
+    const [a, b] = k.split('-');
+    distances[`${b}-${a}`] = v;
+  });
+
   const pickupEl  = document.getElementById('wbPickup');
   const dropEl    = document.getElementById('wbDrop');
   const vehicleEl = document.getElementById('wbVehicle');
-  const form      = document.getElementById('whatsappBookForm');
-  if (!form || !pickupEl || !dropEl || !vehicleEl) return;
+  const tripEl    = document.getElementById('wbTripType');
+  const fareCard  = document.getElementById('wbFareCard');
+  const fareRoute = document.getElementById('wbFareRoute');
+  const fareBreak = document.getElementById('wbFareBreakdown');
+  const fareAmt   = document.getElementById('wbFareAmount');
+  const fareBadge = document.getElementById('wbFareBadge');
 
-  function update() {
-    const key = `${pickupEl.value.trim().toLowerCase()}-${dropEl.value.trim().toLowerCase()}`;
+  if (!pickupEl || !dropEl || !vehicleEl || !fareCard) return;
+
+  function calcFare() {
+    const pickup  = pickupEl.value.trim();
+    const drop    = dropEl.value.trim();
+    const vehicle = vehicleEl.value;
+    const trip    = tripEl?.value || 'one_way';
+
+    fareCard.style.display = 'none';
+    if (!pickup || !drop || !vehicle || pickup === drop) return;
+
+    const key  = `${pickup.toLowerCase()}-${drop.toLowerCase()}`;
     const dist = distances[key];
-    const v    = rates[vehicleEl.value];
-    form.querySelector('.fare-preview')?.remove();
-    if (!dist || !v) return;
-    const fare = Math.max(dist * v.rate, v.min);
-    const p = document.createElement('div'); p.className = 'fare-preview';
-    p.style.cssText = 'background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;text-align:center;';
-    p.innerHTML = `<span style="font-size:.75rem;color:var(--text-secondary);display:block">Estimated Fare</span><strong style="font-size:1.2rem;color:var(--accent)">₹${fare.toLocaleString('en-IN')}</strong><span style="font-size:.7rem;color:var(--text-muted);display:block">Approx. one-way</span>`;
-    form.insertBefore(p, form.querySelector('.btn-wa-submit')?.closest('.form-group-custom') || form.querySelector('#wbSubmitBtn'));
+    if (!dist) return; // route not in table
+
+    const r        = RATES[vehicle];
+    const rate     = trip === 'round_trip' ? r.roundTrip : r.oneWay;
+    const totalDist= trip === 'round_trip' ? dist * 2 : dist;
+    const baseFare = Math.max(totalDist * rate, r.min);
+    const totalFare= baseFare + r.bata;
+    const isRT     = trip === 'round_trip';
+
+    fareBadge.textContent = isRT ? 'Round Trip' : 'One Way';
+    fareBadge.className   = 'wb-fare-badge' + (isRT ? ' rt' : '');
+
+    fareRoute.innerHTML = `
+      <span class="wb-fare-city"><i class="fas fa-location-dot"></i> ${pickup}</span>
+      <span class="wb-fare-arrow"><i class="fas fa-arrow-right"></i>${isRT ? '<i class="fas fa-arrow-left ms-1"></i>' : ''}</span>
+      <span class="wb-fare-city"><i class="fas fa-flag-checkered"></i> ${drop}</span>
+      <span class="wb-fare-dist">${isRT ? totalDist : dist} km${isRT ? ' (both ways)' : ''}</span>`;
+
+    fareBreak.innerHTML = `
+      <div class="wb-fare-row"><span>Distance</span><span>${isRT ? dist + ' km × 2' : dist + ' km'}</span></div>
+      <div class="wb-fare-row"><span>Rate / km</span><span>₹${rate}</span></div>
+      <div class="wb-fare-row"><span>Base Fare</span><span>₹${baseFare.toLocaleString('en-IN')}</span></div>
+      <div class="wb-fare-row"><span>Driver Bata</span><span>₹${r.bata}</span></div>`;
+
+    fareAmt.textContent = '₹' + totalFare.toLocaleString('en-IN');
+    fareCard.style.display = 'block';
+    // animate in
+    fareCard.classList.remove('wb-fare-in');
+    void fareCard.offsetWidth;
+    fareCard.classList.add('wb-fare-in');
   }
 
-  [pickupEl, dropEl, vehicleEl].forEach(el => { el.addEventListener('change', update); el.addEventListener('input', update); });
+  [pickupEl, dropEl, vehicleEl, tripEl].forEach(el => {
+    if (el) { el.addEventListener('change', calcFare); el.addEventListener('input', calcFare); }
+  });
 }());
 
