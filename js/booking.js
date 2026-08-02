@@ -388,6 +388,17 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     var dLon = d && d.longitude ? parseFloat(d.longitude) : 0;
 
     if (pLat && pLon && dLat && dLon) {
+      /* Instant haversine estimate (road factor 1.3) */
+      if (!staticDist) {
+        const straight = DistanceService._haversine ? DistanceService._haversine(pLat, pLon, dLat, dLon)
+          : Math.round(Math.acos(Math.sin(pLat*Math.PI/180)*Math.sin(dLat*Math.PI/180)+Math.cos(pLat*Math.PI/180)*Math.cos(dLat*Math.PI/180)*Math.cos((dLon-pLon)*Math.PI/180)) * 6371);
+        const estKm = Math.round(straight * 1.3);
+        window._currentDistKm = estKm;
+        updateDistBar(estKm, DistanceService.formatDuration(estKm * 90), 'fallback');
+        window.triggerFareCalc?.();
+      }
+
+      /* Then get real OSRM distance */
       (async () => {
         try {
           if (_osrmCtrl) _osrmCtrl.abort();
@@ -398,7 +409,7 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
             updateDistBar(osrm.distKm, osrm.durationText, osrm.source);
             window.triggerFareCalc?.();
           }
-        } catch(e) { /* keep static */ }
+        } catch(e) { /* keep estimate */ }
       })();
     }
   }
