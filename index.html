@@ -260,47 +260,34 @@
                   <span class="wbv-name">Sedan</span>
                   <span class="wbv-sub">4 Seater</span>
                   <span class="wbv-price">₹15/km</span>
+                  <span class="wbv-total" id="wbvTotalSedan" style="display:none"></span>
                 </button>
                 <button type="button" class="wb-vehicle-opt" data-value="SUV" role="radio" aria-checked="false">
                   <span class="wbv-icon"><i class="fas fa-truck-pickup"></i></span>
                   <span class="wbv-name">SUV</span>
                   <span class="wbv-sub">6 Seater</span>
                   <span class="wbv-price">₹20/km</span>
+                  <span class="wbv-total" id="wbvTotalSUV" style="display:none"></span>
                 </button>
                 <button type="button" class="wb-vehicle-opt" data-value="Innova" role="radio" aria-checked="false">
                   <span class="wbv-icon"><i class="fas fa-van-shuttle"></i></span>
                   <span class="wbv-name">Innova</span>
                   <span class="wbv-sub">7 Seater</span>
                   <span class="wbv-price">₹21/km</span>
+                  <span class="wbv-total" id="wbvTotalInnova" style="display:none"></span>
                 </button>
               </div>
             </div>
 
-            <!-- Fare Summary Card — moves here, right after vehicle picker -->
+            <!-- Fare Summary Card — shown right after vehicle picker -->
             <div class="wb-fare-card" id="wbFareCard" style="display:none">
               <div class="wb-fare-header">
                 <span class="wb-fare-title"><i class="fas fa-receipt"></i> Fare Estimate</span>
                 <span class="wb-fare-badge" id="wbFareBadge">One Way</span>
               </div>
               <div class="wb-fare-route" id="wbFareRoute"></div>
-              <!-- All-vehicle rate table (shown when no vehicle selected yet) -->
-              <div class="wb-fare-all-vehicles" id="wbFareAllVehicles" style="display:none">
-                <div class="wb-fare-veh-row">
-                  <span><i class="fas fa-taxi"></i> Sedan (4 Seater)</span>
-                  <span class="wb-fare-veh-amt" id="fareSedan">—</span>
-                </div>
-                <div class="wb-fare-veh-row">
-                  <span><i class="fas fa-truck-pickup"></i> SUV (6 Seater)</span>
-                  <span class="wb-fare-veh-amt" id="fareSUV">—</span>
-                </div>
-                <div class="wb-fare-veh-row">
-                  <span><i class="fas fa-van-shuttle"></i> Innova (7 Seater)</span>
-                  <span class="wb-fare-veh-amt" id="fareInnova">—</span>
-                </div>
-              </div>
-              <!-- Breakdown for selected vehicle -->
               <div class="wb-fare-breakdown" id="wbFareBreakdown"></div>
-              <div class="wb-fare-total" id="wbFareTotal" style="display:none">
+              <div class="wb-fare-total">
                 <span>Estimated Total</span>
                 <span class="wb-fare-amount" id="wbFareAmount">₹0</span>
               </div>

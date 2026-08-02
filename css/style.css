@@ -934,6 +934,9 @@ h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); font-weight: 700; }
 .wbv-name { font-size: 0.78rem; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
 .wbv-sub  { font-size: 0.65rem; color: var(--text-muted); line-height: 1; }
 .wbv-price { font-size: 0.7rem; font-weight: 700; color: var(--accent); background: rgba(249,115,22,0.08); padding: 2px 7px; border-radius: 20px; margin-top: 2px; }
+.wbv-total { font-size: 0.78rem; font-weight: 800; color: #fff; background: var(--accent); padding: 3px 8px; border-radius: 20px; margin-top: 4px; display: none; animation: wbvTotalPop 0.3s cubic-bezier(.2,.8,.4,1.2) both; }
+@keyframes wbvTotalPop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.wb-vehicle-opt.selected .wbv-total { background: #fff; color: var(--accent); }
 .wb-vehicle-picker.wb-picker-error { outline: 2px solid #EF4444; border-radius: var(--radius-sm); }
 
 /* Trip type toggle */

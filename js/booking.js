@@ -461,55 +461,58 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     const trip    = tripEl?.value || 'one_way';
     const distKm  = window._currentDistKm;
 
-    fareCard.style.display = 'none';
-    if (!pickup || !drop || !distKm || pickup === drop) return;
+    // Always hide fare card if no distance yet
+    if (!distKm || !pickup || !drop || pickup === drop) {
+      fareCard.style.display = 'none';
+      // Hide all vehicle total badges
+      ['Sedan','SUV','Innova'].forEach(v => {
+        const el = document.getElementById('wbvTotal' + v);
+        if (el) el.style.display = 'none';
+      });
+      return;
+    }
 
     const isRT = trip === 'round_trip';
-    const allVehiclesEl = document.getElementById('wbFareAllVehicles');
-    const fareTotalEl   = document.getElementById('wbFareTotal');
 
-    // Route header always shown
+    // ── Update total amount on EACH vehicle card ──────────
+    ['Sedan','SUV','Innova'].forEach(v => {
+      const r    = RATES[v];
+      const rate = isRT ? r.roundTrip : r.oneWay;
+      const dist = isRT ? distKm * 2 : distKm;
+      const amt  = Math.max(dist * rate, r.min) + r.bata;
+      const el   = document.getElementById('wbvTotal' + v);
+      if (el) {
+        el.textContent = '₹' + amt.toLocaleString('en-IN');
+        el.style.display = 'inline-block';
+      }
+    });
+
+    // ── Show fare breakdown card only when vehicle selected ─
+    fareCard.style.display = 'none';
+    if (!vehicle) return;
+
+    const r     = RATES[vehicle];
+    const rate  = isRT ? r.roundTrip : r.oneWay;
+    const total = isRT ? distKm * 2 : distKm;
+    const base  = Math.max(total * rate, r.min);
+    const grand = base + r.bata;
+
     fareBadge.textContent = isRT ? 'Round Trip' : 'One Way';
     fareBadge.className   = 'wb-fare-badge' + (isRT ? ' rt' : '');
-    fareRoute.innerHTML   = `
+
+    fareRoute.innerHTML = `
       <span class="wb-fare-city"><i class="fas fa-location-dot"></i> ${pickup}</span>
       <span class="wb-fare-arrow"><i class="fas fa-arrow-right"></i>${isRT ? '<i class="fas fa-arrow-left ms-1"></i>':''}</span>
       <span class="wb-fare-city"><i class="fas fa-flag-checkered"></i> ${drop}</span>
-      <span class="wb-fare-dist">${isRT ? distKm*2 : distKm} km${isRT?' (both ways)':''}</span>`;
+      <span class="wb-fare-dist">${total} km${isRT?' (both ways)':''}</span>`;
 
-    if (!vehicle) {
-      // No vehicle selected — show all 3 rates
-      allVehiclesEl.style.display = 'block';
-      fareBreak.innerHTML = '';
-      fareTotalEl.style.display = 'none';
+    fareBreak.innerHTML = `
+      <div class="wb-fare-row"><span>Distance</span><span>${isRT ? distKm+' km × 2' : distKm+' km'}</span></div>
+      <div class="wb-fare-row"><span>Rate / km</span><span>₹${rate}</span></div>
+      <div class="wb-fare-row"><span>Base Fare</span><span>₹${base.toLocaleString('en-IN')}</span></div>
+      <div class="wb-fare-row"><span>Driver Bata</span><span>₹${r.bata}</span></div>`;
 
-      ['Sedan','SUV','Innova'].forEach(v => {
-        const r    = RATES[v];
-        const rate = isRT ? r.roundTrip : r.oneWay;
-        const dist = isRT ? distKm * 2 : distKm;
-        const amt  = Math.max(dist * rate, r.min) + r.bata;
-        const el   = document.getElementById('fare' + v);
-        if (el) el.textContent = '₹' + amt.toLocaleString('en-IN');
-      });
-    } else {
-      // Vehicle selected — show breakdown
-      allVehiclesEl.style.display = 'none';
-      const r    = RATES[vehicle];
-      const rate = isRT ? r.roundTrip : r.oneWay;
-      const total= isRT ? distKm * 2 : distKm;
-      const base = Math.max(total * rate, r.min);
-      const grand= base + r.bata;
-
-      fareBreak.innerHTML = `
-        <div class="wb-fare-row"><span>Distance</span><span>${isRT ? distKm+' km × 2' : distKm+' km'}</span></div>
-        <div class="wb-fare-row"><span>Rate / km</span><span>₹${rate}</span></div>
-        <div class="wb-fare-row"><span>Base Fare</span><span>₹${base.toLocaleString('en-IN')}</span></div>
-        <div class="wb-fare-row"><span>Driver Bata</span><span>₹${r.bata}</span></div>`;
-
-      fareAmt.textContent       = '₹' + grand.toLocaleString('en-IN');
-      fareTotalEl.style.display = 'flex';
-    }
-
+    fareAmt.textContent = '₹' + grand.toLocaleString('en-IN');
     fareCard.style.display = 'block';
     fareCard.classList.remove('wb-fare-in');
     void fareCard.offsetWidth;
