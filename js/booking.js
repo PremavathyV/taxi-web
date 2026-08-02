@@ -379,25 +379,26 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
       window.triggerFareCalc?.();
     }
 
-    /* 2. OSRM real distance — only if we have lat/lon from model */
-    const p = window._pickupModel;
-    const d = window._dropModel;
-    if (p?.latitude && d?.latitude) {
+    /* 2. OSRM real distance using TomTom lat/lon */
+    var p = window._pickupModel;
+    var d = window._dropModel;
+    var pLat = p && p.latitude  ? parseFloat(p.latitude)  : 0;
+    var pLon = p && p.longitude ? parseFloat(p.longitude) : 0;
+    var dLat = d && d.latitude  ? parseFloat(d.latitude)  : 0;
+    var dLon = d && d.longitude ? parseFloat(d.longitude) : 0;
+
+    if (pLat && pLon && dLat && dLon) {
       (async () => {
         try {
           if (_osrmCtrl) _osrmCtrl.abort();
           _osrmCtrl = new AbortController();
-          const osrm = await DistanceService.getDrivingDistance(
-            parseFloat(p.latitude), parseFloat(p.longitude),
-            parseFloat(d.latitude), parseFloat(d.longitude),
-            _osrmCtrl.signal
-          );
+          const osrm = await DistanceService.getDrivingDistance(pLat, pLon, dLat, dLon, _osrmCtrl.signal);
           if (osrm) {
             window._currentDistKm = osrm.distKm;
             updateDistBar(osrm.distKm, osrm.durationText, osrm.source);
             window.triggerFareCalc?.();
           }
-        } catch { /* keep static */ }
+        } catch(e) { /* keep static */ }
       })();
     }
   }
