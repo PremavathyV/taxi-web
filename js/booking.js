@@ -323,80 +323,188 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
   });
 }());
 
+
 /* ══════════════════════════════════════════════════════
-   CITY AUTOCOMPLETE (Pickup & Drop)
+   LOCATION AUTOCOMPLETE — OpenStreetMap Nominatim
+   Real place search (cities, areas, landmarks) — no API key needed
    ══════════════════════════════════════════════════════ */
 (function () {
-  const CITIES = [
+
+  /* Fallback city list shown when offline or before first API response */
+  const FALLBACK = [
     'Chennai','Bangalore','Coimbatore','Madurai','Trichy','Salem',
     'Pondicherry','Vellore','Tirunelveli','Erode','Ooty','Kodaikanal',
     'Kumbakonam','Thanjavur','Kanyakumari','Tirupati','Hyderabad',
-    'Kochi','Munnar','Mysore','Nagercoil','Dindigul','Karur','Namakkal',
-    'Tirupur','Hosur','Chidambaram','Nagapattinam','Rameswaram','Velankanni',
-    'Villupuram','Cuddalore','Neyveli','Coonoor','Palani','Pollachi',
-    'Nellai','Thoothukudi','Virudhunagar','Sivakasi','Ramanathapuram',
+    'Kochi','Munnar','Mysore','Nagercoil','Dindigul','Hosur','Tirupur',
+    'Coonoor','Palani','Pollachi','Thoothukudi','Rameswaram','Chidambaram',
   ];
 
-  function buildAutocomplete(inputId, hiddenId, suggestId) {
-    const input    = document.getElementById(inputId);
-    const hidden   = document.getElementById(hiddenId);
-    const suggest  = document.getElementById(suggestId);
+  function buildLocationSearch(inputId, hiddenId, suggestId) {
+    const input   = document.getElementById(inputId);
+    const hidden  = document.getElementById(hiddenId);
+    const suggest = document.getElementById(suggestId);
     if (!input || !hidden || !suggest) return;
 
-    let activeIdx = -1;
+    let activeIdx  = -1;
+    let debounceT  = null;
+    let lastQuery  = '';
+    let controller = null; // AbortController for in-flight requests
 
-    function showSuggestions(val) {
-      const q = val.trim().toLowerCase();
+    /* ── Render suggestion list ─────────────────────── */
+    function renderList(items) {
       suggest.innerHTML = '';
       activeIdx = -1;
-      if (!q) { suggest.style.display = 'none'; return; }
+      if (!items.length) { suggest.style.display = 'none'; return; }
 
-      const matches = CITIES.filter(c => c.toLowerCase().startsWith(q))
-        .concat(CITIES.filter(c => !c.toLowerCase().startsWith(q) && c.toLowerCase().includes(q)));
-
-      if (!matches.length) { suggest.style.display = 'none'; return; }
-
-      matches.slice(0, 8).forEach((city, i) => {
-        const li = document.createElement('li');
+      items.forEach(item => {
+        const li  = document.createElement('li');
         li.setAttribute('role', 'option');
-        li.setAttribute('tabindex', '-1');
-        // highlight matching part
-        const idx = city.toLowerCase().indexOf(q);
-        li.innerHTML = city.slice(0, idx) +
-          `<strong>${city.slice(idx, idx + q.length)}</strong>` +
-          city.slice(idx + q.length);
-        li.addEventListener('mousedown', () => selectCity(city));
+
+        const name    = item.name    || '';
+        const subtext = item.subtext || '';
+        const type    = item.type    || '';
+        const icon    = getIcon(type);
+
+        li.innerHTML = `
+          <span class="wb-sug-icon">${icon}</span>
+          <span class="wb-sug-text">
+            <span class="wb-sug-name">${highlight(name, lastQuery)}</span>
+            ${subtext ? `<span class="wb-sug-sub">${subtext}</span>` : ''}
+          </span>`;
+
+        li.addEventListener('mousedown', e => { e.preventDefault(); selectPlace(item); });
         suggest.appendChild(li);
       });
       suggest.style.display = 'block';
     }
 
-    function selectCity(city) {
-      input.value  = city;
-      hidden.value = city;
+    /* ── Icon based on place type ───────────────────── */
+    function getIcon(type) {
+      const t = (type || '').toLowerCase();
+      if (['city','town','village','suburb','municipality'].some(x => t.includes(x)))
+        return '<i class="fas fa-city"></i>';
+      if (['airport','aerodrome'].some(x => t.includes(x)))
+        return '<i class="fas fa-plane"></i>';
+      if (['railway','station','junction'].some(x => t.includes(x)))
+        return '<i class="fas fa-train"></i>';
+      if (['hotel','lodge','resort'].some(x => t.includes(x)))
+        return '<i class="fas fa-hotel"></i>';
+      return '<i class="fas fa-map-marker-alt"></i>';
+    }
+
+    /* ── Highlight matched query in name ────────────── */
+    function highlight(text, q) {
+      if (!q) return text;
+      const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      return text.replace(re, '<strong>$1</strong>');
+    }
+
+    /* ── Fetch from Nominatim ───────────────────────── */
+    async function fetchNominatim(q) {
+      if (controller) controller.abort();
+      controller = new AbortController();
+
+      const url = `https://nominatim.openstreetmap.org/search?` +
+        `q=${encodeURIComponent(q)}&` +
+        `countrycodes=in&` +           // India only
+        `addressdetails=1&` +
+        `limit=8&` +
+        `format=json`;
+
+      const res  = await fetch(url, {
+        signal: controller.signal,
+        headers: { 'Accept-Language': 'en' },
+      });
+      const data = await res.json();
+
+      return data.map(p => {
+        const addr = p.address || {};
+        const name = addr.city || addr.town || addr.village || addr.county ||
+                     addr.state_district || p.display_name.split(',')[0];
+        const parts = p.display_name.split(',').slice(1, 3).join(',').trim();
+        return {
+          name,
+          subtext: parts,
+          fullName: p.display_name,
+          type: p.type || p.class || '',
+          lat: p.lat,
+          lon: p.lon,
+        };
+      });
+    }
+
+    /* ── Fallback static list ───────────────────────── */
+    function getFallback(q) {
+      const ql = q.toLowerCase();
+      return FALLBACK
+        .filter(c => c.toLowerCase().startsWith(ql))
+        .concat(FALLBACK.filter(c => !c.toLowerCase().startsWith(ql) && c.toLowerCase().includes(ql)))
+        .slice(0, 8)
+        .map(c => ({ name: c, subtext: 'Tamil Nadu / South India', type: 'city' }));
+    }
+
+    /* ── Show loading spinner in list ──────────────── */
+    function showLoading() {
+      suggest.innerHTML = '<li class="wb-sug-loading"><i class="fas fa-circle-notch fa-spin"></i> Searching…</li>';
+      suggest.style.display = 'block';
+    }
+
+    /* ── Main search trigger ────────────────────────── */
+    async function search(q) {
+      lastQuery = q;
+      if (q.length < 2) { suggest.style.display = 'none'; return; }
+
+      // Show fallback instantly, then fetch real results
+      const fb = getFallback(q);
+      if (fb.length) renderList(fb);
+      else showLoading();
+
+      try {
+        const results = await fetchNominatim(q);
+        if (results.length) renderList(results);
+        else if (!fb.length) suggest.style.display = 'none';
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          // keep fallback shown if network fails
+          if (!fb.length) suggest.style.display = 'none';
+        }
+      }
+    }
+
+    /* ── Select a place ─────────────────────────────── */
+    function selectPlace(item) {
+      input.value  = item.name;
+      hidden.value = item.name;
       suggest.style.display = 'none';
       suggest.innerHTML = '';
-      // clear error state
+      activeIdx = -1;
+      // clear error
       input.classList.remove('wb-error');
       input.style.borderColor = '';
-      input.style.boxShadow = '';
-      input.closest('.wb-autocomplete-wrap')?.parentElement?.querySelector('.wb-err-msg')?.remove();
+      input.style.boxShadow   = '';
+      const wrap = input.closest('.wb-autocomplete-wrap')?.parentElement;
+      wrap?.querySelector('.wb-err-msg')?.remove();
       // trigger fare calc
       hidden.dispatchEvent(new Event('change'));
     }
 
+    /* ── Events ─────────────────────────────────────── */
     input.addEventListener('input', function () {
-      hidden.value = ''; // clear confirmed value until re-selected
-      showSuggestions(this.value);
+      hidden.value = '';
+      const q = this.value.trim();
+      clearTimeout(debounceT);
+      if (!q) { suggest.style.display = 'none'; return; }
+      debounceT = setTimeout(() => search(q), 300); // 300ms debounce
     });
 
     input.addEventListener('focus', function () {
-      if (this.value) showSuggestions(this.value);
+      if (this.value.trim().length >= 2) search(this.value.trim());
     });
 
     input.addEventListener('keydown', function (e) {
-      const items = suggest.querySelectorAll('li');
-      if (!items.length) return;
+      const items = suggest.querySelectorAll('li:not(.wb-sug-loading)');
+      if (!items.length || suggest.style.display === 'none') return;
+
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         activeIdx = Math.min(activeIdx + 1, items.length - 1);
@@ -410,7 +518,7 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
       } else if (e.key === 'Enter') {
         if (activeIdx >= 0 && items[activeIdx]) {
           e.preventDefault();
-          selectCity(items[activeIdx].textContent);
+          items[activeIdx].dispatchEvent(new MouseEvent('mousedown'));
         }
       } else if (e.key === 'Escape') {
         suggest.style.display = 'none';
@@ -418,16 +526,16 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
       }
     });
 
-    // Close on outside click
-    document.addEventListener('click', function (e) {
+    document.addEventListener('click', e => {
       if (!input.contains(e.target) && !suggest.contains(e.target)) {
         suggest.style.display = 'none';
       }
     });
   }
 
-  buildAutocomplete('wbPickupInput', 'wbPickup', 'wbPickupSuggestions');
-  buildAutocomplete('wbDropInput',   'wbDrop',   'wbDropSuggestions');
+  buildLocationSearch('wbPickupInput', 'wbPickup', 'wbPickupSuggestions');
+  buildLocationSearch('wbDropInput',   'wbDrop',   'wbDropSuggestions');
+
 }());
 (function () {
   const toggle = document.getElementById('wbTripToggle');

@@ -947,7 +947,7 @@ h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); font-weight: 700; }
 .wb-select-wrap .form-input-custom { appearance: none; -webkit-appearance: none; padding-right: 36px; cursor: pointer; }
 .wb-select-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); font-size: 0.75rem; }
 
-/* City autocomplete */
+/* City autocomplete — Nominatim powered */
 .wb-autocomplete-wrap { position: relative; }
 .wb-autocomplete-input { padding-right: 36px !important; }
 .wb-ac-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 0.82rem; }
@@ -956,20 +956,26 @@ h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); font-weight: 700; }
 .wb-suggestions {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0;
   background: var(--card-bg); border: 1.5px solid var(--card-border);
-  border-radius: var(--radius-sm); box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+  border-radius: var(--radius-sm); box-shadow: 0 10px 32px rgba(0,0,0,0.14);
   list-style: none; padding: 6px 0; margin: 0; z-index: 500;
-  max-height: 224px; overflow-y: auto; display: none;
+  max-height: 260px; overflow-y: auto; display: none;
 }
 .wb-suggestions li {
-  padding: 9px 14px; font-size: 0.84rem; color: var(--text-primary);
-  cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px; font-size: 0.83rem; color: var(--text-primary);
+  cursor: pointer; transition: background 0.12s;
+  display: flex; align-items: flex-start; gap: 10px;
 }
-.wb-suggestions li::before { content: '\f3c5'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 0.7rem; color: var(--text-muted); flex-shrink: 0; }
-.wb-suggestions li strong { color: var(--accent); font-weight: 700; }
+.wb-sug-icon { color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; flex-shrink: 0; width: 14px; text-align: center; }
+.wb-sug-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wb-sug-name { font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wb-sug-name strong { color: var(--accent); font-weight: 700; }
+.wb-sug-sub  { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wb-suggestions li:hover,
-.wb-suggestions li.active { background: rgba(249,115,22,0.07); color: var(--accent); }
-.wb-suggestions li:hover::before,
-.wb-suggestions li.active::before { color: var(--accent); }
+.wb-suggestions li.active { background: rgba(249,115,22,0.07); }
+.wb-suggestions li:hover .wb-sug-icon,
+.wb-suggestions li.active .wb-sug-icon { color: var(--accent); }
+.wb-sug-loading { color: var(--text-muted) !important; font-size: 0.78rem !important; cursor: default !important; justify-content: center !important; padding: 12px 14px !important; gap: 8px !important; }
+.wb-sug-loading i { color: var(--accent); }
 
 /* Fare card */
 .wb-fare-card { background: linear-gradient(135deg,rgba(249,115,22,0.06),rgba(37,99,235,0.04)); border: 1.5px solid rgba(249,115,22,0.25); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; transition: var(--transition); }
