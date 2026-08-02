@@ -346,7 +346,7 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
   let _osrmCtrl = null;
   window._currentDistKm = null;
 
-  /* Update distance bar shown between the two fields */
+  /* Distance bar UI */
   function updateDistBar(distKm, durText, source) {
     const bar   = document.getElementById('locDistBar');
     const kmEl  = document.getElementById('locDistKm');
@@ -356,39 +356,50 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     if (!distKm) { bar.style.display = 'none'; return; }
     kmEl.innerHTML  = `<i class="fas fa-road"></i> <strong>${distKm} km</strong>`;
     durEl.innerHTML = `<i class="fas fa-clock"></i> <strong>${durText}</strong>`;
-    if (srcEl) srcEl.textContent = source === 'osrm' ? '· real driving distance' : '· estimated';
+    if (srcEl) srcEl.textContent = source === 'osrm' ? '· real driving' : '· estimated';
     bar.style.display = 'flex';
   }
 
-  /* After both locations selected — fetch real distance then calc fare */
-  async function onBothSelected() {
-    const p = window._pickupModel;
-    const d = window._dropModel;
-    if (!p?.isValid() || !d?.isValid()) { updateDistBar(null); return; }
+  /* Core: called whenever pickup or drop changes */
+  function onLocationChanged() {
+    const pickup = (document.getElementById('wbPickup')?.value || '').trim();
+    const drop   = (document.getElementById('wbDrop')?.value   || '').trim();
+    if (!pickup || !drop || pickup === drop) {
+      window._currentDistKm = null;
+      updateDistBar(null);
+      window.triggerFareCalc?.();
+      return;
+    }
 
-    /* 1. Static distance — instant */
-    const staticDist = DistanceService.getStaticDistance(p.city, d.city);
+    /* 1. Static lookup — instant, works for all known cities */
+    const staticDist = DistanceService.getStaticDistance(pickup, drop);
     if (staticDist) {
       window._currentDistKm = staticDist;
       updateDistBar(staticDist, DistanceService.formatDuration(staticDist * 90), 'static');
       window.triggerFareCalc?.();
     }
 
-    /* 2. Real OSRM driving distance — async */
-    try {
-      if (_osrmCtrl) _osrmCtrl.abort();
-      _osrmCtrl = new AbortController();
-      const osrm = await DistanceService.getDrivingDistance(
-        parseFloat(p.latitude), parseFloat(p.longitude),
-        parseFloat(d.latitude), parseFloat(d.longitude),
-        _osrmCtrl.signal
-      );
-      if (osrm) {
-        window._currentDistKm = osrm.distKm;
-        updateDistBar(osrm.distKm, osrm.durationText, osrm.source);
-        window.triggerFareCalc?.();
-      }
-    } catch { /* AbortError or network — keep static */ }
+    /* 2. OSRM real distance — only if we have lat/lon from model */
+    const p = window._pickupModel;
+    const d = window._dropModel;
+    if (p?.latitude && d?.latitude) {
+      (async () => {
+        try {
+          if (_osrmCtrl) _osrmCtrl.abort();
+          _osrmCtrl = new AbortController();
+          const osrm = await DistanceService.getDrivingDistance(
+            parseFloat(p.latitude), parseFloat(p.longitude),
+            parseFloat(d.latitude), parseFloat(d.longitude),
+            _osrmCtrl.signal
+          );
+          if (osrm) {
+            window._currentDistKm = osrm.distKm;
+            updateDistBar(osrm.distKm, osrm.durationText, osrm.source);
+            window.triggerFareCalc?.();
+          }
+        } catch { /* keep static */ }
+      })();
+    }
   }
 
   /* Build autocomplete for pickup */
@@ -397,7 +408,7 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     hiddenId:  'wbPickup',
     suggestId: 'wbPickupSuggestions',
     modelKey:  'pickup',
-    onSelect:  (model) => { window._pickupModel = model; onBothSelected(); },
+    onSelect:  (model) => { window._pickupModel = model; onLocationChanged(); },
   });
 
   /* Build autocomplete for drop */
@@ -406,7 +417,12 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     hiddenId:  'wbDrop',
     suggestId: 'wbDropSuggestions',
     modelKey:  'drop',
-    onSelect:  (model) => { window._dropModel = model; onBothSelected(); },
+    onSelect:  (model) => { window._dropModel = model; onLocationChanged(); },
+  });
+
+  /* Also listen on hidden inputs directly — catches any programmatic changes */
+  ['wbPickup','wbDrop'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', onLocationChanged);
   });
 
   window.triggerFareCalc = () => {};

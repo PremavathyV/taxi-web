@@ -167,11 +167,20 @@ const DistanceService = (() => {
     'nagercoil-kanyakumari':22,'thanjavur-kumbakonam':40,
   };
 
-  /** Get static distance between two cities (symmetric) */
+  /** Get static distance between two cities (symmetric, case-insensitive) */
   function getStaticDistance(cityA, cityB) {
-    const a = cityA.toLowerCase().trim();
-    const b = cityB.toLowerCase().trim();
-    return STATIC_DIST[`${a}-${b}`] || STATIC_DIST[`${b}-${a}`] || null;
+    const norm = s => (s || '').toLowerCase().trim()
+      .replace(/\s+/g, '')          // remove spaces
+      .replace(/[^a-z]/g, '');      // letters only
+    const a = norm(cityA);
+    const b = norm(cityB);
+    // direct lookup
+    for (const [k, v] of Object.entries(STATIC_DIST)) {
+      const [ka, kb] = k.split('-');
+      if ((norm(ka) === a && norm(kb) === b) ||
+          (norm(ka) === b && norm(kb) === a)) return v;
+    }
+    return null;
   }
 
   /** Haversine formula — straight-line km between two coordinates */
