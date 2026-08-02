@@ -8,7 +8,7 @@
  */
 'use strict';
 
-var TOMTOM_KEY   = 'YOUR_TOMTOM_API_KEY';   // replace with your key
+var TOMTOM_KEY   = 'p31xjqKewqDp97XEtDXUZLIz6pSvjy8z';
 var GEOAPIFY_KEY = '4dda2d6c7fe0462793ab462db1b57d89'; // backup
 
 /* ══════════════════════════════════════════════════════════
@@ -246,18 +246,24 @@ LocationAutocomplete.prototype._tomtomSearch = function(q) {
       if (!results.length) { self._showEmpty(); return; }
       var features = results.map(function(r) {
         var addr = r.address || {};
-        var name = addr.municipalitySubdivision
+        /* Use street/area name for display, municipality for city */
+        var name = addr.streetName
           || (r.poi && r.poi.name)
-          || addr.municipality
+          || addr.municipalitySubdivision
           || (addr.freeformAddress || '').split(',')[0];
-        var city  = addr.municipality || addr.municipalitySubdivision || '';
+        var city  = addr.municipality || '';
         var state = addr.countrySubdivision || '';
         var lat   = r.position ? r.position.lat : '';
         var lon   = r.position ? r.position.lon : '';
+        /* Build clean context: suburb + city */
+        var suburb = addr.municipalitySubdivision || '';
+        var context = suburb && city && suburb !== city
+          ? suburb + ', ' + city
+          : city || suburb;
         return {
           properties: {
             name: name, address_line1: name,
-            address_line2: addr.freeformAddress || '',
+            address_line2: context + (state ? ', ' + state : ''),
             city: city, state: state, country: 'India',
             postcode: addr.postalCode || '', place_id: r.id || '',
             result_type: r.type || '',
