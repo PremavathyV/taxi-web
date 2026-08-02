@@ -1049,6 +1049,13 @@ h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); font-weight: 700; }
 .wb-fare-note { font-size: 0.7rem; color: var(--text-muted); margin: 10px 0 0; display: flex; align-items: flex-start; gap: 5px; }
 .wb-fare-note i { color: var(--accent); margin-top: 2px; flex-shrink: 0; }
 
+/* Fare exclusions */
+.wb-fare-exclusions { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--card-border); }
+.wb-fare-excl-title { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 6px; }
+.wb-fare-excl-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.wb-fare-excl-list span { display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; font-weight: 600; color: #EF4444; background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.wb-fare-excl-list span i { font-size: 0.6rem; }
+
 /* WA Submit button */
 .btn-wa-submit { background: linear-gradient(135deg,#25D366,#128C7E) !important; box-shadow: 0 6px 24px rgba(37,211,102,0.3) !important; font-size: 1rem; }
 .btn-wa-submit:hover { box-shadow: 0 12px 32px rgba(37,211,102,0.45) !important; transform: translateY(-2px); }
