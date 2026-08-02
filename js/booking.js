@@ -185,6 +185,10 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
         submitBtn.querySelector('.wbBtn-inner').innerHTML = origInner;
         submitBtn.disabled = false; busy = false;
         form.reset();
+        // clear autocomplete visible inputs
+        const pi = document.getElementById('wbPickupInput'); if (pi) pi.value = '';
+        const di = document.getElementById('wbDropInput');   if (di) di.value = '';
+        document.getElementById('wbFareCard').style.display = 'none';
         if (fDate) fDate.min = todayStr();
         if (vehiclePicker) vehiclePicker.querySelectorAll('.wb-vehicle-opt').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-checked','false'); });
         if (nameCounter) { nameCounter.textContent = '0 / 50'; nameCounter.className = 'wb-char-counter'; }
@@ -210,11 +214,11 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     if (!email)                   { wbErr(fEmail, 'Please enter your email address.'); ok = false; }
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { wbErr(fEmail, 'Enter a valid email address.'); ok = false; }
 
-    if (!fPickup.value.trim()) { wbErr(fPickup, 'Please select pickup city.'); ok = false; }
-    if (!fDrop.value.trim())   { wbErr(fDrop,   'Please select drop city.'); ok = false; }
+    if (!fPickup.value.trim()) { wbErr(document.getElementById('wbPickupInput'), 'Please select a pickup city.'); ok = false; }
+    if (!fDrop.value.trim())   { wbErr(document.getElementById('wbDropInput'),   'Please select a drop city.'); ok = false; }
     if (fPickup.value.trim() && fDrop.value.trim() &&
         fPickup.value.trim().toLowerCase() === fDrop.value.trim().toLowerCase()) {
-      wbErr(fDrop, 'Pickup and drop city cannot be the same.'); ok = false;
+      wbErr(document.getElementById('wbDropInput'), 'Pickup and drop city cannot be the same.'); ok = false;
     }
 
     if (!fDate.value) { wbErr(fDate, 'Please select journey date.'); ok = false; }
@@ -320,8 +324,111 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
 }());
 
 /* ══════════════════════════════════════════════════════
-   TRIP TYPE TOGGLE
+   CITY AUTOCOMPLETE (Pickup & Drop)
    ══════════════════════════════════════════════════════ */
+(function () {
+  const CITIES = [
+    'Chennai','Bangalore','Coimbatore','Madurai','Trichy','Salem',
+    'Pondicherry','Vellore','Tirunelveli','Erode','Ooty','Kodaikanal',
+    'Kumbakonam','Thanjavur','Kanyakumari','Tirupati','Hyderabad',
+    'Kochi','Munnar','Mysore','Nagercoil','Dindigul','Karur','Namakkal',
+    'Tirupur','Hosur','Chidambaram','Nagapattinam','Rameswaram','Velankanni',
+    'Villupuram','Cuddalore','Neyveli','Coonoor','Palani','Pollachi',
+    'Nellai','Thoothukudi','Virudhunagar','Sivakasi','Ramanathapuram',
+  ];
+
+  function buildAutocomplete(inputId, hiddenId, suggestId) {
+    const input    = document.getElementById(inputId);
+    const hidden   = document.getElementById(hiddenId);
+    const suggest  = document.getElementById(suggestId);
+    if (!input || !hidden || !suggest) return;
+
+    let activeIdx = -1;
+
+    function showSuggestions(val) {
+      const q = val.trim().toLowerCase();
+      suggest.innerHTML = '';
+      activeIdx = -1;
+      if (!q) { suggest.style.display = 'none'; return; }
+
+      const matches = CITIES.filter(c => c.toLowerCase().startsWith(q))
+        .concat(CITIES.filter(c => !c.toLowerCase().startsWith(q) && c.toLowerCase().includes(q)));
+
+      if (!matches.length) { suggest.style.display = 'none'; return; }
+
+      matches.slice(0, 8).forEach((city, i) => {
+        const li = document.createElement('li');
+        li.setAttribute('role', 'option');
+        li.setAttribute('tabindex', '-1');
+        // highlight matching part
+        const idx = city.toLowerCase().indexOf(q);
+        li.innerHTML = city.slice(0, idx) +
+          `<strong>${city.slice(idx, idx + q.length)}</strong>` +
+          city.slice(idx + q.length);
+        li.addEventListener('mousedown', () => selectCity(city));
+        suggest.appendChild(li);
+      });
+      suggest.style.display = 'block';
+    }
+
+    function selectCity(city) {
+      input.value  = city;
+      hidden.value = city;
+      suggest.style.display = 'none';
+      suggest.innerHTML = '';
+      // clear error state
+      input.classList.remove('wb-error');
+      input.style.borderColor = '';
+      input.style.boxShadow = '';
+      input.closest('.wb-autocomplete-wrap')?.parentElement?.querySelector('.wb-err-msg')?.remove();
+      // trigger fare calc
+      hidden.dispatchEvent(new Event('change'));
+    }
+
+    input.addEventListener('input', function () {
+      hidden.value = ''; // clear confirmed value until re-selected
+      showSuggestions(this.value);
+    });
+
+    input.addEventListener('focus', function () {
+      if (this.value) showSuggestions(this.value);
+    });
+
+    input.addEventListener('keydown', function (e) {
+      const items = suggest.querySelectorAll('li');
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = Math.min(activeIdx + 1, items.length - 1);
+        items.forEach((li, i) => li.classList.toggle('active', i === activeIdx));
+        items[activeIdx]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = Math.max(activeIdx - 1, 0);
+        items.forEach((li, i) => li.classList.toggle('active', i === activeIdx));
+        items[activeIdx]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        if (activeIdx >= 0 && items[activeIdx]) {
+          e.preventDefault();
+          selectCity(items[activeIdx].textContent);
+        }
+      } else if (e.key === 'Escape') {
+        suggest.style.display = 'none';
+        activeIdx = -1;
+      }
+    });
+
+    // Close on outside click
+    document.addEventListener('click', function (e) {
+      if (!input.contains(e.target) && !suggest.contains(e.target)) {
+        suggest.style.display = 'none';
+      }
+    });
+  }
+
+  buildAutocomplete('wbPickupInput', 'wbPickup', 'wbPickupSuggestions');
+  buildAutocomplete('wbDropInput',   'wbDrop',   'wbDropSuggestions');
+}());
 (function () {
   const toggle = document.getElementById('wbTripToggle');
   const hidden = document.getElementById('wbTripType');
