@@ -42,6 +42,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#F1F5F9;color:#0F172A
 .btn-login:hover{background:linear-gradient(135deg,#d97706,#b45309);}
 .btn-login:active{transform:scale(.98);}
 .auth-divider{text-align:center;font-size:.78rem;color:#94A3B8;margin:16px 0;}
+.server-status{margin-top:8px;display:flex;align-items:center;justify-content:center;}
+#serverDot{animation:serverPulse 1.5s ease-in-out infinite;}
+@keyframes serverPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 
 /* ── LAYOUT ── */
 #dashPage{display:none;}
@@ -253,8 +256,15 @@ tbody tr:hover{background:#FAFBFF;}
       <div class="logo-icon"><i class="fas fa-route"></i></div>
       <h2>SUNDARA <span>TRAVELS</span></h2>
       <p>Admin Portal</p>
+      <div class="server-status">
+        <span id="serverDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#F59E0B;margin-right:5px;transition:.3s;"></span>
+        <span style="font-size:.7rem;color:#94A3B8" id="serverStatusText">Connecting to server…</span>
+      </div>
     </div>
     <div id="authError" class="alert alert-danger d-none py-2" role="alert"></div>
+    <div id="wakeupNotice" class="alert alert-warning d-none py-2" style="font-size:.78rem" role="alert">
+      <i class="fas fa-moon me-1"></i> Server is waking up (free tier). First login may take up to 60 seconds. Please wait…
+    </div>
     <form id="loginForm" novalidate>
       <div class="mb-3">
         <label class="form-label">Email Address</label>

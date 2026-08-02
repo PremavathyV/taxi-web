@@ -16,16 +16,44 @@ function hideDash()     { document.getElementById('dashPage').style.cssText = 'd
 function hideAuth()     { document.getElementById('authPage').style.cssText = 'display:none!important'; }
 
 /* ══ Config ══════════════════════════════════════════════ */
-const API = '/api';
-let TOKEN = localStorage.getItem('st_admin_token') || '';
+const API = window.location.hostname === 'localhost' ? '/api' : '/api';
+let TOKEN = '';
 let currentBookingId = null;
 let currentContactId = null;
 let currentPage      = 1;
 let refreshInterval  = null;
 
-// Always start at login — clear any stale token
+// Always start at login
 TOKEN = ''; localStorage.removeItem('st_admin_token');
 showAuth();
+
+/* ══ Server wake-up ping (Render cold start fix) ════════ */
+(async () => {
+  const dot      = document.getElementById('serverDot');
+  const statusTx = document.getElementById('serverStatusText');
+  const notice   = document.getElementById('wakeupNotice');
+
+  // Show wakeup notice after 4s if server hasn't responded
+  const wakeTimer = setTimeout(() => {
+    if (notice) notice.classList.remove('d-none');
+  }, 4000);
+
+  try {
+    const res  = await fetch('/api/health', { signal: AbortSignal.timeout(65000) });
+    const data = await res.json();
+    clearTimeout(wakeTimer);
+    if (notice) notice.classList.add('d-none');
+    if (data.success) {
+      if (dot) { dot.style.background = '#22C55E'; }
+      if (statusTx) statusTx.textContent = 'Server online ✓';
+    }
+  } catch {
+    clearTimeout(wakeTimer);
+    if (dot) { dot.style.background = '#EF4444'; }
+    if (statusTx) statusTx.textContent = 'Server offline — check connection';
+    if (notice) notice.classList.add('d-none');
+  }
+})();
 
 /* ══ HTTP Helpers ════════════════════════════════════════ */
 async function req(method, url, body) {
@@ -76,23 +104,50 @@ function startClock() {
 /* ══ AUTH ════════════════════════════════════════════════ */
 document.getElementById('loginForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const btn  = document.getElementById('loginBtn');
+  const btn   = document.getElementById('loginBtn');
   const errEl = document.getElementById('authError');
   errEl.classList.add('d-none');
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Logging in…'; btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i>Logging in…'; btn.disabled = true;
+
+  // Show waking message after 3s (Render cold start)
+  const wakeTimer = setTimeout(() => {
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i>Waking server… (30s)';
+  }, 3000);
+
   try {
-    const { token, data } = await POST('/admin/login', {
-      email:    document.getElementById('loginEmail').value.trim(),
-      password: document.getElementById('loginPassword').value,
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+    const res = await fetch(API + '/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email:    document.getElementById('loginEmail').value.trim(),
+        password: document.getElementById('loginPassword').value,
+      }),
+      signal: controller.signal,
     });
-    TOKEN = token;
-    localStorage.setItem('st_admin_token', token);
-    setAdminInfo(data);
+    clearTimeout(timeout);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Login failed');
+
+    TOKEN = data.token;
+    localStorage.setItem('st_admin_token', data.token);
+    setAdminInfo(data.data);
     showDash();
   } catch (err) {
-    errEl.textContent = err.message; errEl.classList.remove('d-none');
+    let msg = err.message || 'Login failed';
+    if (err.name === 'AbortError' || msg.includes('abort')) {
+      msg = 'Server is waking up. Please try again in 30 seconds.';
+    } else if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
+      msg = 'Cannot reach server. Check your internet connection.';
+    }
+    errEl.textContent = msg;
+    errEl.classList.remove('d-none');
   } finally {
-    btn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login to Dashboard'; btn.disabled = false;
+    clearTimeout(wakeTimer);
+    btn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login to Dashboard';
+    btn.disabled = false;
   }
 });
 
@@ -144,11 +199,7 @@ function showDash() {
   }, 30000);
 }
 
-// No auto-login — user must always enter credentials manually.
-// Token is used only for API calls after login.
-TOKEN = ''; localStorage.removeItem('st_admin_token');
-showAuth();
-hideDash();
+// Navigation and dashboard below
 
 /* ══ Navigation ══════════════════════════════════════════ */
 document.querySelectorAll('[data-sec]').forEach(a => {
