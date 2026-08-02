@@ -419,14 +419,15 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
 
       return data.map(p => {
         const addr = p.address || {};
-        const name = addr.city || addr.town || addr.village || addr.county ||
+        const rawName = addr.city || addr.town || addr.village || addr.county ||
                      addr.state_district || p.display_name.split(',')[0];
+        const normalized = normalizeCity(rawName);
         const parts = p.display_name.split(',').slice(1, 3).join(',').trim();
         return {
-          name,
-          subtext: parts,
+          name:     normalized,
+          subtext:  parts,
           fullName: p.display_name,
-          type: p.type || p.class || '',
+          type:     p.type || p.class || '',
           lat: p.lat,
           lon: p.lon,
         };
@@ -471,10 +472,65 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
       }
     }
 
+    /* ── Normalize place name to match distances table ─ */
+    function normalizeCity(raw) {
+      if (!raw) return raw;
+      // Map of common Nominatim variants → canonical name in distances table
+      const MAP = {
+        'bengaluru':'Bangalore','bengaluru urban':'Bangalore','bengaluru rural':'Bangalore',
+        'greater chennai corporation':'Chennai','chennai district':'Chennai',
+        'coimbatore district':'Coimbatore','coimbatore corporation':'Coimbatore',
+        'madurai district':'Madurai','madurai corporation':'Madurai',
+        'tiruchirappalli':'Trichy','tiruchirappalli district':'Trichy',
+        'trichy':'Trichy','tiruchirapalli':'Trichy',
+        'salem district':'Salem',
+        'puducherry':'Pondicherry','pondicherry':'Pondicherry',
+        'vellore district':'Vellore',
+        'tirunelveli district':'Tirunelveli','tirunelveli corporation':'Tirunelveli',
+        'erode district':'Erode',
+        'udhagamandalam':'Ooty','ootacamund':'Ooty','ooty':'Ooty',
+        'kodaikanal':'Kodaikanal',
+        'kumbakonam':'Kumbakonam',
+        'thanjavur district':'Thanjavur','tanjore':'Thanjavur',
+        'kanyakumari district':'Kanyakumari','cape comorin':'Kanyakumari',
+        'tirupati':'Tirupati','tirupathi':'Tirupati',
+        'hyderabad district':'Hyderabad',
+        'ernakulam':'Kochi','cochin':'Kochi','kochi':'Kochi',
+        'munnar':'Munnar',
+        'mysuru':'Mysore','mysore':'Mysore','mysuru district':'Mysore',
+        'nagercoil':'Nagercoil','kanyakumari':'Kanyakumari',
+        'dindigul district':'Dindigul',
+        'hosur':'Hosur',
+        'tiruppur':'Tirupur','tirupur':'Tirupur',
+        'coonoor':'Coonoor',
+        'palani':'Palani',
+        'pollachi':'Pollachi',
+        'thoothukudi':'Thoothukudi','tuticorin':'Thoothukudi',
+        'rameswaram':'Rameswaram',
+        'chidambaram':'Chidambaram',
+      };
+      const lower = raw.toLowerCase().trim();
+      if (MAP[lower]) return MAP[lower];
+      // Try matching known city names as substrings
+      const KNOWN = [
+        'Chennai','Bangalore','Coimbatore','Madurai','Trichy','Salem',
+        'Pondicherry','Vellore','Tirunelveli','Erode','Ooty','Kodaikanal',
+        'Kumbakonam','Thanjavur','Kanyakumari','Tirupati','Hyderabad',
+        'Kochi','Munnar','Mysore','Nagercoil','Dindigul','Hosur','Tirupur',
+        'Coonoor','Palani','Pollachi','Thoothukudi','Rameswaram','Chidambaram',
+      ];
+      for (const city of KNOWN) {
+        if (lower.includes(city.toLowerCase())) return city;
+      }
+      // Return original (capitalized first letter) for display
+      return raw.split(',')[0].trim();
+    }
+
     /* ── Select a place ─────────────────────────────── */
     function selectPlace(item) {
-      input.value  = item.name;
-      hidden.value = item.name;
+      const normalized = normalizeCity(item.name);
+      input.value  = normalized;          // show clean city name
+      hidden.value = normalized;          // used by fare calc
       suggest.style.display = 'none';
       suggest.innerHTML = '';
       activeIdx = -1;
