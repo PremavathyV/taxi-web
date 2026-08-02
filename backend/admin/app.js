@@ -28,33 +28,36 @@ TOKEN = ''; localStorage.removeItem('st_admin_token');
 showAuth();
 
 /* ══ Server wake-up ping (Render cold start fix) ════════ */
-(async () => {
-  const dot      = document.getElementById('serverDot');
-  const statusTx = document.getElementById('serverStatusText');
-  const notice   = document.getElementById('wakeupNotice');
+(function pingServer() {
+  var dot      = document.getElementById('serverDot');
+  var statusTx = document.getElementById('serverStatusText');
+  var notice   = document.getElementById('wakeupNotice');
 
-  // Show wakeup notice after 4s if server hasn't responded
-  const wakeTimer = setTimeout(() => {
-    if (notice) notice.classList.remove('d-none');
+  var wakeTimer = setTimeout(function() {
+    if (notice)   notice.classList.remove('d-none');
     if (statusTx) statusTx.textContent = 'Waking server… (may take 30–60s)';
   }, 4000);
 
-  try {
-    const res  = await fetch('/api/health', { signal: AbortSignal.timeout(65000) });
-    const data = await res.json();
-    clearTimeout(wakeTimer);
-    if (notice) notice.classList.add('d-none');
-    if (data.success) {
-      if (dot)    { dot.classList.remove('offline'); dot.classList.add('online'); }
-      if (statusTx) statusTx.textContent = 'Server online — ready to login';
-    }
-  } catch {
-    clearTimeout(wakeTimer);
-    if (dot)    { dot.classList.remove('online'); dot.classList.add('offline'); }
-    if (statusTx) statusTx.textContent = 'Server offline — check connection';
-    if (notice) notice.classList.add('d-none');
-  }
-})();
+  var ctrl = new AbortController();
+  var tOut = setTimeout(function() { ctrl.abort(); }, 65000);
+
+  fetch('/api/health', { signal: ctrl.signal })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      clearTimeout(wakeTimer); clearTimeout(tOut);
+      if (notice) notice.classList.add('d-none');
+      if (data.success) {
+        if (dot)    { dot.classList.remove('offline'); dot.classList.add('online'); }
+        if (statusTx) statusTx.textContent = 'Server online — ready to login';
+      }
+    })
+    .catch(function() {
+      clearTimeout(wakeTimer); clearTimeout(tOut);
+      if (dot)    { dot.classList.remove('online'); dot.classList.add('offline'); }
+      if (statusTx) statusTx.textContent = 'Server offline — check connection';
+      if (notice) notice.classList.add('d-none');
+    });
+}());
 
 /* ══ HTTP Helpers ════════════════════════════════════════ */
 async function req(method, url, body) {
@@ -116,19 +119,19 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
   }, 3000);
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    var ctrl2  = new AbortController();
+    var tOut2  = setTimeout(function() { ctrl2.abort(); }, 60000);
 
-    const res = await fetch(API + '/admin/login', {
+    var res = await fetch(API + '/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email:    document.getElementById('loginEmail').value.trim(),
         password: document.getElementById('loginPassword').value,
       }),
-      signal: controller.signal,
+      signal: ctrl2.signal,
     });
-    clearTimeout(timeout);
+    clearTimeout(tOut2);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Login failed');
 
