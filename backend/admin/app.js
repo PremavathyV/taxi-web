@@ -36,6 +36,7 @@ showAuth();
   // Show wakeup notice after 4s if server hasn't responded
   const wakeTimer = setTimeout(() => {
     if (notice) notice.classList.remove('d-none');
+    if (statusTx) statusTx.textContent = 'Waking server… (may take 30–60s)';
   }, 4000);
 
   try {
@@ -44,12 +45,12 @@ showAuth();
     clearTimeout(wakeTimer);
     if (notice) notice.classList.add('d-none');
     if (data.success) {
-      if (dot) { dot.style.background = '#22C55E'; }
-      if (statusTx) statusTx.textContent = 'Server online ✓';
+      if (dot)    { dot.classList.remove('offline'); dot.classList.add('online'); }
+      if (statusTx) statusTx.textContent = 'Server online — ready to login';
     }
   } catch {
     clearTimeout(wakeTimer);
-    if (dot) { dot.style.background = '#EF4444'; }
+    if (dot)    { dot.classList.remove('online'); dot.classList.add('offline'); }
     if (statusTx) statusTx.textContent = 'Server offline — check connection';
     if (notice) notice.classList.add('d-none');
   }

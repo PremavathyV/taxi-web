@@ -42,9 +42,34 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#F1F5F9;color:#0F172A
 .btn-login:hover{background:linear-gradient(135deg,#d97706,#b45309);}
 .btn-login:active{transform:scale(.98);}
 .auth-divider{text-align:center;font-size:.78rem;color:#94A3B8;margin:16px 0;}
-.server-status{margin-top:8px;display:flex;align-items:center;justify-content:center;}
-#serverDot{animation:serverPulse 1.5s ease-in-out infinite;}
-@keyframes serverPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.server-status{
+  margin-top:12px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(0,0,0,0.06);
+  border-radius:20px;
+  padding:6px 14px;
+}
+#serverDot{
+  display:inline-block;
+  width:12px;height:12px;
+  border-radius:50%;
+  background:#F59E0B;
+  flex-shrink:0;
+  box-shadow:0 0 0 3px rgba(245,158,11,0.25);
+  animation:serverPulse 1.2s ease-in-out infinite;
+}
+#serverDot.online{
+  background:#22C55E;
+  box-shadow:0 0 0 3px rgba(34,197,94,0.25);
+  animation:none;
+}
+#serverDot.offline{
+  background:#EF4444;
+  box-shadow:0 0 0 3px rgba(239,68,68,0.25);
+  animation:none;
+}
+#serverStatusText{font-size:.78rem;font-weight:600;color:#475569;}
+@keyframes serverPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.85);}}
 
 /* ── LAYOUT ── */
 #dashPage{display:none;}
@@ -257,8 +282,8 @@ tbody tr:hover{background:#FAFBFF;}
       <h2>SUNDARA <span>TRAVELS</span></h2>
       <p>Admin Portal</p>
       <div class="server-status">
-        <span id="serverDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#F59E0B;margin-right:5px;transition:.3s;"></span>
-        <span style="font-size:.7rem;color:#94A3B8" id="serverStatusText">Connecting to server…</span>
+        <span id="serverDot"></span>
+        <span id="serverStatusText">Connecting to server…</span>
       </div>
     </div>
     <div id="authError" class="alert alert-danger d-none py-2" role="alert"></div>
