@@ -246,27 +246,40 @@ LocationAutocomplete.prototype._tomtomSearch = function(q) {
       if (!results.length) { self._showEmpty(); return; }
       var features = results.map(function(r) {
         var addr = r.address || {};
-        /* Use street/area name for display, municipality for city */
-        var name = addr.streetName
-          || (r.poi && r.poi.name)
-          || addr.municipalitySubdivision
+        var poi  = r.poi || {};
+
+        /* Best display name — pick the most specific available */
+        var name = poi.name                          // POI like "Perambur Railway Station"
+          || addr.streetName                         // Street name
+          || addr.municipalitySubdivision            // Suburb/area like "Kolathur"
+          || addr.municipality                       // City like "Chennai"
           || (addr.freeformAddress || '').split(',')[0];
-        var city  = addr.municipality || '';
-        var state = addr.countrySubdivision || '';
-        var lat   = r.position ? r.position.lat : '';
-        var lon   = r.position ? r.position.lon : '';
-        /* Build clean context: suburb + city */
+
         var suburb = addr.municipalitySubdivision || '';
-        var context = suburb && city && suburb !== city
-          ? suburb + ', ' + city
-          : city || suburb;
+        var city   = addr.municipality || '';
+        var state  = addr.countrySubdivision || '';
+
+        /* Context line: Suburb, City, State */
+        var parts = [];
+        if (suburb && suburb !== name) parts.push(suburb);
+        if (city   && city !== name && city !== suburb) parts.push(city);
+        if (state) parts.push(state);
+        var context = parts.join(', ');
+
+        var lat = r.position ? r.position.lat : '';
+        var lon = r.position ? r.position.lon : '';
+
         return {
           properties: {
-            name: name, address_line1: name,
-            address_line2: context + (state ? ', ' + state : ''),
-            city: city, state: state, country: 'India',
-            postcode: addr.postalCode || '', place_id: r.id || '',
-            result_type: r.type || '',
+            name:          name,
+            address_line1: name,
+            address_line2: context,
+            city:          city || suburb,
+            state:         state,
+            country:       'India',
+            postcode:      addr.postalCode || '',
+            place_id:      r.id || '',
+            result_type:   r.type || (poi.name ? 'amenity' : 'locality'),
           },
           geometry: { coordinates: [parseFloat(lon)||0, parseFloat(lat)||0] },
         };
@@ -403,8 +416,10 @@ LocationAutocomplete.prototype._icon = function(type, name) {
 
 LocationAutocomplete.prototype._hl = function(text) {
   if (!this._lastQuery || !text) return text;
-  var safe = this._lastQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return text.replace(new RegExp('(' + safe + ')', 'gi'), '<strong>$1</strong>');
+  try {
+    var safe = this._lastQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return text.replace(new RegExp('(' + safe + ')', 'gi'), '<strong>$1</strong>');
+  } catch(e) { return text; }
 };
 
 LocationAutocomplete.prototype._select = function(feature, displayName) {
