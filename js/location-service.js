@@ -13,7 +13,7 @@
 /* ── API Key (Geoapify — free, no billing) ───────────────
    Get your free key at https://myprojects.geoapify.com
    Current key: public free-tier key                       */
-var GEOAPIFY_KEY = 'YOUR_GEOAPIFY_API_KEY';
+var GEOAPIFY_KEY = '4dda2d6c7fe0462793ab462db1b57d89';
 
 /* ══════════════════════════════════════════════════════════
    BookingLocationModel
@@ -240,12 +240,14 @@ LocationAutocomplete.prototype._search = function(q) {
     '&apiKey=' + GEOAPIFY_KEY;
 
   fetch(url, { signal: self._controller.signal })
-    .then(function(res) { return res.json(); })
+    .then(function(res) {
+      if (!res.ok) throw new Error('Geoapify ' + res.status);
+      return res.json();
+    })
     .then(function(data) {
       var features = (data && data.features) ? data.features : [];
       if (features.length) {
         self._cache[q] = features;
-        // trim cache
         var keys = Object.keys(self._cache);
         if (keys.length > 30) delete self._cache[keys[0]];
         self._render(features);
@@ -255,38 +257,38 @@ LocationAutocomplete.prototype._search = function(q) {
     })
     .catch(function(err) {
       if (err && err.name === 'AbortError') return;
-      /* Fallback to Nominatim if Geoapify key missing */
+      console.warn('Geoapify error, trying Nominatim fallback:', err.message);
       self._nominatimFallback(q);
     });
 };
 
-/* Nominatim fallback when no Geoapify key */
+/* Nominatim fallback when Geoapify fails */
 LocationAutocomplete.prototype._nominatimFallback = function(q) {
   var self = this;
   var url = 'https://nominatim.openstreetmap.org/search?' +
-    'q=' + encodeURIComponent(q + ' India') +
-    '&countrycodes=in&addressdetails=1&limit=8&format=json';
+    'q=' + encodeURIComponent(q) +
+    '&countrycodes=in&addressdetails=1&limit=8&format=json&accept-language=en';
 
   fetch(url, { headers: { 'Accept-Language': 'en' } })
     .then(function(res) { return res.json(); })
     .then(function(data) {
       if (!data || !data.length) { self._showEmpty(); return; }
-      /* Convert Nominatim → Geoapify-like features */
       var features = data.map(function(p) {
         var addr = p.address || {};
-        var city = addr.city || addr.town || addr.village || addr.county || '';
+        var name = p.display_name.split(',')[0];
+        var rest = p.display_name.split(',').slice(1,4).join(',').trim();
         return {
           properties: {
-            formatted:   p.display_name,
-            name:        p.display_name.split(',')[0],
-            city:        city,
-            state:       addr.state || '',
-            country:     'India',
-            postcode:    addr.postcode || '',
-            place_id:    'osm:' + (p.osm_type||'N') + ':' + (p.osm_id||''),
-            result_type: p.type || 'unknown',
-            address_line1: p.display_name.split(',')[0],
-            address_line2: p.display_name.split(',').slice(1,4).join(',').trim(),
+            formatted:     p.display_name,
+            name:          name,
+            address_line1: name,
+            address_line2: rest,
+            city:          addr.city || addr.town || addr.village || addr.county || '',
+            state:         addr.state || '',
+            country:       'India',
+            postcode:      addr.postcode || '',
+            place_id:      'osm:' + (p.osm_type||'N') + ':' + (p.osm_id||''),
+            result_type:   p.type || p.class || 'unknown',
           },
           geometry: { coordinates: [parseFloat(p.lon)||0, parseFloat(p.lat)||0] },
         };
