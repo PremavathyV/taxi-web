@@ -106,60 +106,75 @@ function startClock() {
 }
 
 /* ══ AUTH ════════════════════════════════════════════════ */
-document.getElementById('loginForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const btn   = document.getElementById('loginBtn');
-  const errEl = document.getElementById('authError');
-  errEl.classList.add('d-none');
-  btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i>Logging in…'; btn.disabled = true;
+function doLogin(e) {
+  if (e) e.preventDefault();
 
-  // Show waking message after 3s (Render cold start)
-  const wakeTimer = setTimeout(() => {
-    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i>Waking server… (30s)';
+  var btn   = document.getElementById('loginBtn');
+  var errEl = document.getElementById('authError');
+  var email = document.getElementById('loginEmail').value.trim();
+  var pwd   = document.getElementById('loginPassword').value;
+
+  errEl.classList.add('d-none');
+
+  if (!email || !pwd) {
+    errEl.textContent = 'Please enter email and password.';
+    errEl.classList.remove('d-none');
+    return;
+  }
+
+  btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i>Logging in…';
+  btn.disabled  = true;
+
+  var wakeTimer = setTimeout(function() {
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i>Waking server… please wait';
   }, 3000);
 
-  try {
-    var ctrl2  = new AbortController();
-    var tOut2  = setTimeout(function() { ctrl2.abort(); }, 60000);
+  var ctrl = new AbortController();
+  var tout = setTimeout(function() { ctrl.abort(); }, 60000);
 
-    var res = await fetch(API + '/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email:    document.getElementById('loginEmail').value.trim(),
-        password: document.getElementById('loginPassword').value,
-      }),
-      signal: ctrl2.signal,
+  fetch('/api/admin/login', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ email: email, password: pwd }),
+    signal:  ctrl.signal,
+  })
+  .then(function(res) {
+    clearTimeout(tout);
+    return res.json().then(function(data) {
+      return { ok: res.ok, status: res.status, data: data };
     });
-    clearTimeout(tOut2);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Login failed');
-
-    TOKEN = data.token;
-    localStorage.setItem('st_admin_token', data.token);
-    setAdminInfo(data.data);
+  })
+  .then(function(result) {
+    clearTimeout(wakeTimer);
+    if (!result.ok) throw new Error(result.data.message || 'Login failed. Check credentials.');
+    TOKEN = result.data.token;
+    localStorage.setItem('st_admin_token', result.data.token);
+    setAdminInfo(result.data.data);
     showDash();
-  } catch (err) {
-    let msg = err.message || 'Login failed';
-    if (err.name === 'AbortError' || msg.includes('abort')) {
-      msg = 'Server is waking up. Please try again in 30 seconds.';
-    } else if (msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
-      msg = 'Cannot reach server. Check your internet connection.';
+  })
+  .catch(function(err) {
+    clearTimeout(wakeTimer);
+    clearTimeout(tout);
+    var msg = err.message || 'Login failed';
+    if (err.name === 'AbortError') {
+      msg = 'Server timeout. Please try again.';
+    } else if (msg.toLowerCase().indexOf('failed to fetch') !== -1 || msg.toLowerCase().indexOf('network') !== -1) {
+      msg = 'Cannot reach server. Check internet connection.';
     }
     errEl.textContent = msg;
     errEl.classList.remove('d-none');
-  } finally {
-    clearTimeout(wakeTimer);
     btn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login to Dashboard';
-    btn.disabled = false;
-  }
-});
+    btn.disabled  = false;
+  });
+}
 
-// Password visibility toggle
-document.getElementById('togglePwd')?.addEventListener('click', () => {
-  const inp = document.getElementById('loginPassword');
+// Also bind form submit as fallback
+document.getElementById('loginForm').addEventListener('submit', function(e) { doLogin(e); });
+
+function togglePassword() {
+  var inp = document.getElementById('loginPassword');
   inp.type = inp.type === 'password' ? 'text' : 'password';
-});
+}
 
 document.getElementById('logoutBtn').addEventListener('click', e => {
   e.preventDefault();
