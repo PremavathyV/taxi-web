@@ -276,26 +276,42 @@
               </div>
             </div>
 
-            <!-- Additional Message -->
-            <div class="form-group-custom">
-              <label for="wbMessage"><i class="fas fa-comment-alt"></i> Additional Message</label>
-              <textarea id="wbMessage" class="form-input-custom" rows="3"
-                        placeholder="Any special requirements or instructions…"></textarea>
-            </div>
-
-            <!-- Fare Summary Card (shown after pickup + drop + vehicle selected) -->
+            <!-- Fare Summary Card — moves here, right after vehicle picker -->
             <div class="wb-fare-card" id="wbFareCard" style="display:none">
               <div class="wb-fare-header">
                 <span class="wb-fare-title"><i class="fas fa-receipt"></i> Fare Estimate</span>
                 <span class="wb-fare-badge" id="wbFareBadge">One Way</span>
               </div>
               <div class="wb-fare-route" id="wbFareRoute"></div>
+              <!-- All-vehicle rate table (shown when no vehicle selected yet) -->
+              <div class="wb-fare-all-vehicles" id="wbFareAllVehicles" style="display:none">
+                <div class="wb-fare-veh-row">
+                  <span><i class="fas fa-taxi"></i> Sedan (4 Seater)</span>
+                  <span class="wb-fare-veh-amt" id="fareSedan">—</span>
+                </div>
+                <div class="wb-fare-veh-row">
+                  <span><i class="fas fa-truck-pickup"></i> SUV (6 Seater)</span>
+                  <span class="wb-fare-veh-amt" id="fareSUV">—</span>
+                </div>
+                <div class="wb-fare-veh-row">
+                  <span><i class="fas fa-van-shuttle"></i> Innova (7 Seater)</span>
+                  <span class="wb-fare-veh-amt" id="fareInnova">—</span>
+                </div>
+              </div>
+              <!-- Breakdown for selected vehicle -->
               <div class="wb-fare-breakdown" id="wbFareBreakdown"></div>
-              <div class="wb-fare-total">
+              <div class="wb-fare-total" id="wbFareTotal" style="display:none">
                 <span>Estimated Total</span>
                 <span class="wb-fare-amount" id="wbFareAmount">₹0</span>
               </div>
-              <p class="wb-fare-note"><i class="fas fa-circle-info"></i> Toll, parking &amp; state permit charges extra. Driver bata included.</p>
+              <p class="wb-fare-note"><i class="fas fa-circle-info"></i> Toll, parking &amp; state permit extra. Driver bata included.</p>
+            </div>
+
+            <!-- Additional Message -->
+            <div class="form-group-custom">
+              <label for="wbMessage"><i class="fas fa-comment-alt"></i> Additional Message</label>
+              <textarea id="wbMessage" class="form-input-custom" rows="3"
+                        placeholder="Any special requirements or instructions…"></textarea>
             </div>
 
             <!-- Submit -->

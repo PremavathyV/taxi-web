@@ -462,31 +462,54 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     const distKm  = window._currentDistKm;
 
     fareCard.style.display = 'none';
-    if (!pickup || !drop || !vehicle || !distKm || pickup === drop) return;
+    if (!pickup || !drop || !distKm || pickup === drop) return;
 
-    const r      = RATES[vehicle];
-    const isRT   = trip === 'round_trip';
-    const rate   = isRT ? r.roundTrip : r.oneWay;
-    const total  = isRT ? distKm * 2 : distKm;
-    const base   = Math.max(total * rate, r.min);
-    const grand  = base + r.bata;
+    const isRT = trip === 'round_trip';
+    const allVehiclesEl = document.getElementById('wbFareAllVehicles');
+    const fareTotalEl   = document.getElementById('wbFareTotal');
 
+    // Route header always shown
     fareBadge.textContent = isRT ? 'Round Trip' : 'One Way';
     fareBadge.className   = 'wb-fare-badge' + (isRT ? ' rt' : '');
-
-    fareRoute.innerHTML = `
+    fareRoute.innerHTML   = `
       <span class="wb-fare-city"><i class="fas fa-location-dot"></i> ${pickup}</span>
       <span class="wb-fare-arrow"><i class="fas fa-arrow-right"></i>${isRT ? '<i class="fas fa-arrow-left ms-1"></i>':''}</span>
       <span class="wb-fare-city"><i class="fas fa-flag-checkered"></i> ${drop}</span>
-      <span class="wb-fare-dist">${total} km${isRT ? ' (both ways)':''}</span>`;
+      <span class="wb-fare-dist">${isRT ? distKm*2 : distKm} km${isRT?' (both ways)':''}</span>`;
 
-    fareBreak.innerHTML = `
-      <div class="wb-fare-row"><span>Distance</span><span>${isRT ? distKm+' km × 2' : distKm+' km'}</span></div>
-      <div class="wb-fare-row"><span>Rate / km</span><span>₹${rate}</span></div>
-      <div class="wb-fare-row"><span>Base Fare</span><span>₹${base.toLocaleString('en-IN')}</span></div>
-      <div class="wb-fare-row"><span>Driver Bata</span><span>₹${r.bata}</span></div>`;
+    if (!vehicle) {
+      // No vehicle selected — show all 3 rates
+      allVehiclesEl.style.display = 'block';
+      fareBreak.innerHTML = '';
+      fareTotalEl.style.display = 'none';
 
-    fareAmt.textContent = '₹' + grand.toLocaleString('en-IN');
+      ['Sedan','SUV','Innova'].forEach(v => {
+        const r    = RATES[v];
+        const rate = isRT ? r.roundTrip : r.oneWay;
+        const dist = isRT ? distKm * 2 : distKm;
+        const amt  = Math.max(dist * rate, r.min) + r.bata;
+        const el   = document.getElementById('fare' + v);
+        if (el) el.textContent = '₹' + amt.toLocaleString('en-IN');
+      });
+    } else {
+      // Vehicle selected — show breakdown
+      allVehiclesEl.style.display = 'none';
+      const r    = RATES[vehicle];
+      const rate = isRT ? r.roundTrip : r.oneWay;
+      const total= isRT ? distKm * 2 : distKm;
+      const base = Math.max(total * rate, r.min);
+      const grand= base + r.bata;
+
+      fareBreak.innerHTML = `
+        <div class="wb-fare-row"><span>Distance</span><span>${isRT ? distKm+' km × 2' : distKm+' km'}</span></div>
+        <div class="wb-fare-row"><span>Rate / km</span><span>₹${rate}</span></div>
+        <div class="wb-fare-row"><span>Base Fare</span><span>₹${base.toLocaleString('en-IN')}</span></div>
+        <div class="wb-fare-row"><span>Driver Bata</span><span>₹${r.bata}</span></div>`;
+
+      fareAmt.textContent       = '₹' + grand.toLocaleString('en-IN');
+      fareTotalEl.style.display = 'flex';
+    }
+
     fareCard.style.display = 'block';
     fareCard.classList.remove('wb-fare-in');
     void fareCard.offsetWidth;
@@ -494,6 +517,10 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
   }
 
   window.triggerFareCalc = calcFare;
+  // Fire on hidden select change AND vehicle picker card clicks
   vehicleEl.addEventListener('change', calcFare);
+  document.getElementById('wbVehiclePicker')?.querySelectorAll('.wb-vehicle-opt').forEach(btn => {
+    btn.addEventListener('click', () => setTimeout(calcFare, 50));
+  });
 }());
 
