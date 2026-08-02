@@ -364,6 +364,7 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
   function onLocationChanged() {
     const pickup = (document.getElementById('wbPickup')?.value || '').trim();
     const drop   = (document.getElementById('wbDrop')?.value   || '').trim();
+
     if (!pickup || !drop || pickup === drop) {
       window._currentDistKm = null;
       updateDistBar(null);
@@ -371,7 +372,15 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
       return;
     }
 
-    /* 1. Static lookup — instant, works for all known cities */
+    // Haversine distance between two lat/lon points
+    function hvs(la1, lo1, la2, lo2) {
+      const R = 6371, d2r = Math.PI / 180;
+      const dLa = (la2-la1)*d2r, dLo = (lo2-lo1)*d2r;
+      const a = Math.sin(dLa/2)**2 + Math.cos(la1*d2r)*Math.cos(la2*d2r)*Math.sin(dLo/2)**2;
+      return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+    }
+
+    /* 1. Static table — instant for known city pairs */
     const staticDist = DistanceService.getStaticDistance(pickup, drop);
     if (staticDist) {
       window._currentDistKm = staticDist;
@@ -379,37 +388,35 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
       window.triggerFareCalc?.();
     }
 
-    /* 2. OSRM real distance using TomTom lat/lon */
-    var p = window._pickupModel;
-    var d = window._dropModel;
-    var pLat = p && p.latitude  ? parseFloat(p.latitude)  : 0;
-    var pLon = p && p.longitude ? parseFloat(p.longitude) : 0;
-    var dLat = d && d.latitude  ? parseFloat(d.latitude)  : 0;
-    var dLon = d && d.longitude ? parseFloat(d.longitude) : 0;
+    /* 2. Use lat/lon from TomTom model */
+    const p    = window._pickupModel;
+    const d    = window._dropModel;
+    const pLat = p && p.latitude  ? parseFloat(p.latitude)  : 0;
+    const pLon = p && p.longitude ? parseFloat(p.longitude) : 0;
+    const dLat = d && d.latitude  ? parseFloat(d.latitude)  : 0;
+    const dLon = d && d.longitude ? parseFloat(d.longitude) : 0;
 
     if (pLat && pLon && dLat && dLon) {
-      /* Instant haversine estimate (road factor 1.3) */
-      if (!staticDist) {
-        const straight = DistanceService._haversine ? DistanceService._haversine(pLat, pLon, dLat, dLon)
-          : Math.round(Math.acos(Math.sin(pLat*Math.PI/180)*Math.sin(dLat*Math.PI/180)+Math.cos(pLat*Math.PI/180)*Math.cos(dLat*Math.PI/180)*Math.cos((dLon-pLon)*Math.PI/180)) * 6371);
-        const estKm = Math.round(straight * 1.3);
+      /* Instant haversine estimate (× 1.3 road factor) */
+      const estKm = Math.round(hvs(pLat, pLon, dLat, dLon) * 1.3) || 1;
+      if (!staticDist || estKm > 0) {
         window._currentDistKm = estKm;
-        updateDistBar(estKm, DistanceService.formatDuration(estKm * 90), 'fallback');
+        updateDistBar(estKm, DistanceService.formatDuration(estKm * 90), 'estimated');
         window.triggerFareCalc?.();
       }
 
-      /* Then get real OSRM distance */
+      /* Then fetch real OSRM driving distance */
       (async () => {
         try {
           if (_osrmCtrl) _osrmCtrl.abort();
           _osrmCtrl = new AbortController();
           const osrm = await DistanceService.getDrivingDistance(pLat, pLon, dLat, dLon, _osrmCtrl.signal);
-          if (osrm) {
+          if (osrm && osrm.distKm > 0) {
             window._currentDistKm = osrm.distKm;
             updateDistBar(osrm.distKm, osrm.durationText, osrm.source);
             window.triggerFareCalc?.();
           }
-        } catch(e) { /* keep estimate */ }
+        } catch(e) { /* keep haversine estimate */ }
       })();
     }
   }
