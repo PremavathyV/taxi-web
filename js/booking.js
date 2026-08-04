@@ -144,6 +144,12 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
       showToastMsg('❌ ' + (err.message || 'Network error. Please try again.'));
       return;
     }
+    // Google Ads Conversion Tracking
+if (window.gtag) {
+  window.gtag('event', 'conversion', {
+    send_to: 'AW-11132042767/Uoo5CLTd9NscEI_8lbwp'
+  });
+}
 
     /* Show confirmation overlay */
     if (confirmSummary) confirmSummary.textContent = `${nameVal} · +91 ${mobileVal}`;
