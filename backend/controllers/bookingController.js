@@ -20,6 +20,7 @@ const createBooking = async (req, res, next) => {
     const {
       name, mobile, email, pickup, drop, journeyDate,
       pickupTime, vehicleType, tripType, specialInstructions,
+      estimatedDistanceKm, estimatedTravelTimeMin, routeMeta,
     } = req.body;
 
     const booking = await Booking.create({
@@ -29,6 +30,15 @@ const createBooking = async (req, res, next) => {
       pickupTime, vehicleType,
       tripType:            tripType            || 'one_way',
       specialInstructions: specialInstructions || '',
+      estimatedDistanceKm: Number(estimatedDistanceKm) > 0 ? Number(estimatedDistanceKm) : 0,
+      estimatedTravelTimeMin: Number(estimatedTravelTimeMin) > 0 ? Number(estimatedTravelTimeMin) : 0,
+      routeMeta: {
+        source: routeMeta && routeMeta.source ? String(routeMeta.source) : '',
+        durationSec: routeMeta && Number(routeMeta.durationSec) > 0 ? Number(routeMeta.durationSec) : 0,
+        durationInTrafficSec: routeMeta && Number(routeMeta.durationInTrafficSec) > 0 ? Number(routeMeta.durationInTrafficSec) : 0,
+        durationText: routeMeta && routeMeta.durationText ? String(routeMeta.durationText) : '',
+        durationInTrafficText: routeMeta && routeMeta.durationInTrafficText ? String(routeMeta.durationInTrafficText) : '',
+      },
       status: 'Pending',
     });
 

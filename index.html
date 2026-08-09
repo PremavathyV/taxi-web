@@ -237,8 +237,12 @@
               <span id="locDistKm"><i class="fas fa-road"></i> <strong>—</strong></span>
               <span class="loc-dist-sep">·</span>
               <span id="locDistDur"><i class="fas fa-clock"></i> <strong>—</strong></span>
+              <span class="loc-dist-sep">·</span>
+              <span id="locDistTraffic"><i class="fas fa-car"></i> <strong>—</strong></span>
               <span class="loc-dist-src" id="locDistSrc"></span>
             </div>
+
+            <div class="wb-route-map" id="wbRouteMap" aria-label="Route preview map" style="display:none"></div>
 
             <!-- Row 3: Date + Time -->
             <div class="form-row-two">
@@ -1091,10 +1095,20 @@
 <script src="./js/animations.js"></script>
 <script src="./js/location-service.js"></script>
 <script>
-  /* Set Geoapify API key */
-  if (window.SundaraLocation) {
-    window.SundaraLocation.setApiKey('4dda2d6c7fe0462793ab462db1b57d89');
-  }
+  /* Load public runtime config from backend */
+  (function loadPublicConfig() {
+    if (!window.SundaraLocation) return;
+
+    fetch('/api/config/public', { cache: 'no-store' })
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(json) {
+        var key = json && json.data ? json.data.googleMapsApiKey : '';
+        window.SundaraLocation.setGoogleMapsKey(key || '');
+      })
+      .catch(function() {
+        window.SundaraLocation.setGoogleMapsKey('');
+      });
+  }());
 </script>
 <script src="./js/booking.js"></script>
 <script src="./js/main.js"></script>
