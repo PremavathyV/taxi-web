@@ -52,6 +52,14 @@ const bookingRules = [
     .isIn(['Sedan','SUV','Innova'])
     .withMessage('Invalid vehicle type.'),
 
+  body('estimatedDistanceKm').optional()
+    .isFloat({ min: 0, max: 5000 }).withMessage('estimatedDistanceKm must be a valid distance in km.'),
+
+  body('estimatedTravelTimeMin').optional()
+    .isFloat({ min: 0, max: 20000 }).withMessage('estimatedTravelTimeMin must be a valid travel time in minutes.'),
+
+  body('routeMeta').optional().isObject().withMessage('routeMeta must be an object.'),
+
   handleValidation,
 ];
 

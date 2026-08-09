@@ -57,6 +57,17 @@ const bookingSchema = new mongoose.Schema(
 
     // Fare estimate
     estimatedFare: { type: Number, default: 0 },
+
+    // Route metrics from map provider
+    estimatedDistanceKm: { type: Number, default: 0, min: 0 },
+    estimatedTravelTimeMin: { type: Number, default: 0, min: 0 },
+    routeMeta: {
+      source: { type: String, trim: true, default: '' },
+      durationSec: { type: Number, default: 0, min: 0 },
+      durationInTrafficSec: { type: Number, default: 0, min: 0 },
+      durationText: { type: String, trim: true, default: '' },
+      durationInTrafficText: { type: String, trim: true, default: '' },
+    },
   },
   { timestamps: true }
 );

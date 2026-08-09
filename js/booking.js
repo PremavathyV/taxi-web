@@ -116,6 +116,7 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     const dateVal    = fDate.value;
     const timeVal    = fTime.value;
     const messageVal = fMessage?.value.trim() || '';
+    const routeMeta = window._currentRouteMeta || null;
 
     const dateObj       = new Date(dateVal + 'T00:00:00');
     const formattedDate = dateObj.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
@@ -133,6 +134,9 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
           pickup: pickupVal, drop: dropVal,
           journeyDate: dateVal, pickupTime: timeVal,
           vehicleType: vehicleVal,
+          estimatedDistanceKm: routeMeta && routeMeta.distanceKm ? routeMeta.distanceKm : undefined,
+          estimatedTravelTimeMin: routeMeta && routeMeta.durationInTrafficSec ? Math.round(routeMeta.durationInTrafficSec / 60) : undefined,
+          routeMeta: routeMeta,
           specialInstructions: messageVal,
         }),
       });
@@ -347,22 +351,106 @@ if (window.gtag) {
    ══════════════════════════════════════════════════════ */
 (function () {
   if (!window.SundaraLocation) return;
-  const { LocationAutocomplete, DistanceService } = window.SundaraLocation;
+  const { LocationAutocomplete, DistanceService, loadGoogleMaps } = window.SundaraLocation;
 
   let _osrmCtrl = null;
   window._currentDistKm = null;
+  window._currentRouteMeta = null;
+
+  let _map = null;
+  let _dirSvc = null;
+  let _dirRdr = null;
+  let _mapReady = false;
+
+  function ensureMapReady() {
+    const mapEl = document.getElementById('wbRouteMap');
+    if (!mapEl) return Promise.resolve(false);
+    return loadGoogleMaps().then(function() {
+      const gm = window.google && window.google.maps;
+      if (!gm) return false;
+      if (!_map) {
+        _map = new gm.Map(mapEl, {
+          center: { lat: 13.0827, lng: 80.2707 },
+          zoom: 7,
+          disableDefaultUI: true,
+          zoomControl: true,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          gestureHandling: 'cooperative',
+        });
+        _dirSvc = new gm.DirectionsService();
+        _dirRdr = new gm.DirectionsRenderer({
+          suppressMarkers: false,
+          preserveViewport: false,
+          polylineOptions: { strokeColor: '#2563EB', strokeOpacity: 0.9, strokeWeight: 5 },
+        });
+        _dirRdr.setMap(_map);
+      }
+      _mapReady = true;
+      return true;
+    }).catch(function() {
+      _mapReady = false;
+      return false;
+    });
+  }
+
+  function drawRouteOnMap(pModel, dModel) {
+    const mapEl = document.getElementById('wbRouteMap');
+    if (!mapEl || !pModel || !dModel) return;
+
+    ensureMapReady().then(function(ok) {
+      if (!ok || !_dirSvc || !_dirRdr) { mapEl.style.display = 'none'; return; }
+
+      const pLat = parseFloat(pModel.latitude || '0');
+      const pLon = parseFloat(pModel.longitude || '0');
+      const dLat = parseFloat(dModel.latitude || '0');
+      const dLon = parseFloat(dModel.longitude || '0');
+      if (!pLat || !pLon || !dLat || !dLon) { mapEl.style.display = 'none'; return; }
+
+      _dirSvc.route({
+        origin: { lat: pLat, lng: pLon },
+        destination: { lat: dLat, lng: dLon },
+        travelMode: 'DRIVING',
+      }, function(result, status) {
+        if (status === 'OK' && result) {
+          _dirRdr.setDirections(result);
+          mapEl.style.display = 'block';
+        } else {
+          mapEl.style.display = 'none';
+        }
+      });
+    });
+  }
 
   /* Distance bar UI */
-  function updateDistBar(distKm, durText, source) {
+  function updateDistBar(distKm, durText, source, trafficText) {
     const bar   = document.getElementById('locDistBar');
     const kmEl  = document.getElementById('locDistKm');
     const durEl = document.getElementById('locDistDur');
+    const trafficEl = document.getElementById('locDistTraffic');
     const srcEl = document.getElementById('locDistSrc');
     if (!bar) return;
-    if (!distKm) { bar.style.display = 'none'; return; }
+    if (!distKm) {
+      bar.style.display = 'none';
+      if (trafficEl) trafficEl.style.display = 'none';
+      return;
+    }
     kmEl.innerHTML  = `<i class="fas fa-road"></i> <strong>${distKm} km</strong>`;
     durEl.innerHTML = `<i class="fas fa-clock"></i> <strong>${durText}</strong>`;
-    if (srcEl) srcEl.textContent = source === 'osrm' ? '· real driving' : '· estimated';
+    if (trafficEl) {
+      if (trafficText) {
+        trafficEl.innerHTML = `<i class="fas fa-car"></i> <strong>${trafficText}</strong>`;
+        trafficEl.style.display = 'inline-flex';
+      } else {
+        trafficEl.style.display = 'none';
+      }
+    }
+    if (srcEl) {
+      if (source === 'google') srcEl.textContent = '· live road estimate';
+      else if (source === 'osrm') srcEl.textContent = '· road estimate';
+      else srcEl.textContent = '· estimated';
+    }
     bar.style.display = 'flex';
   }
 
@@ -373,7 +461,10 @@ if (window.gtag) {
 
     if (!pickup || !drop || pickup === drop) {
       window._currentDistKm = null;
+      window._currentRouteMeta = null;
       updateDistBar(null);
+      const mapEl = document.getElementById('wbRouteMap');
+      if (mapEl) mapEl.style.display = 'none';
       window.triggerFareCalc?.();
       return;
     }
@@ -390,6 +481,14 @@ if (window.gtag) {
     const staticDist = DistanceService.getStaticDistance(pickup, drop);
     if (staticDist) {
       window._currentDistKm = staticDist;
+      window._currentRouteMeta = {
+        distanceKm: staticDist,
+        durationSec: staticDist * 90,
+        durationInTrafficSec: staticDist * 90,
+        durationText: DistanceService.formatDuration(staticDist * 90),
+        durationInTrafficText: DistanceService.formatDuration(staticDist * 90),
+        source: 'static',
+      };
       updateDistBar(staticDist, DistanceService.formatDuration(staticDist * 90), 'static');
       window.triggerFareCalc?.();
     }
@@ -407,19 +506,54 @@ if (window.gtag) {
       const estKm = Math.round(hvs(pLat, pLon, dLat, dLon) * 1.3) || 1;
       if (!staticDist || estKm > 0) {
         window._currentDistKm = estKm;
+        window._currentRouteMeta = {
+          distanceKm: estKm,
+          durationSec: estKm * 90,
+          durationInTrafficSec: estKm * 90,
+          durationText: DistanceService.formatDuration(estKm * 90),
+          durationInTrafficText: DistanceService.formatDuration(estKm * 90),
+          source: 'estimated',
+        };
         updateDistBar(estKm, DistanceService.formatDuration(estKm * 90), 'estimated');
         window.triggerFareCalc?.();
       }
+
+      drawRouteOnMap(p, d);
 
       /* Then fetch real OSRM driving distance */
       (async () => {
         try {
           if (_osrmCtrl) _osrmCtrl.abort();
           _osrmCtrl = new AbortController();
-          const osrm = await DistanceService.getDrivingDistance(pLat, pLon, dLat, dLon, _osrmCtrl.signal);
+          const dt = document.getElementById('wbDate')?.value || '';
+          const tm = document.getElementById('wbTime')?.value || '';
+          let departureTime = new Date();
+          if (dt && tm) {
+            const parsed = new Date(dt + 'T' + tm + ':00');
+            if (!Number.isNaN(parsed.getTime())) departureTime = parsed;
+          }
+
+          const osrm = await DistanceService.getDrivingDistance(
+            pLat, pLon, dLat, dLon, _osrmCtrl.signal, { departureTime: departureTime }
+          );
           if (osrm && osrm.distKm > 0) {
             window._currentDistKm = osrm.distKm;
-            updateDistBar(osrm.distKm, osrm.durationText, osrm.source);
+            window._currentRouteMeta = {
+              distanceKm: osrm.distKm,
+              durationSec: osrm.durationSec,
+              durationInTrafficSec: osrm.durationInTrafficSec || osrm.durationSec,
+              durationText: DistanceService.formatDuration(osrm.durationSec),
+              durationInTrafficText: DistanceService.formatDuration(osrm.durationInTrafficSec || osrm.durationSec),
+              source: osrm.source,
+            };
+            updateDistBar(
+              osrm.distKm,
+              DistanceService.formatDuration(osrm.durationSec),
+              osrm.source,
+              osrm.durationInTrafficSec && osrm.durationInTrafficSec !== osrm.durationSec
+                ? DistanceService.formatDuration(osrm.durationInTrafficSec)
+                : ''
+            );
             window.triggerFareCalc?.();
           }
         } catch(e) { /* keep haversine estimate */ }
@@ -447,6 +581,10 @@ if (window.gtag) {
 
   /* Also listen on hidden inputs directly — catches any programmatic changes */
   ['wbPickup','wbDrop'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', onLocationChanged);
+  });
+
+  ['wbDate','wbTime'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', onLocationChanged);
   });
 

@@ -10,6 +10,63 @@
 
 var TOMTOM_KEY   = 'p31xjqKewqDp97XEtDXUZLIz6pSvjy8z';
 var GEOAPIFY_KEY = '4dda2d6c7fe0462793ab462db1b57d89'; // backup
+var GOOGLE_MAPS_KEY = '';
+/* Google Maps / Places API */
+var GOOGLE_MAPS_READY = false;
+
+function setGoogleMapsKey(key) {
+  GOOGLE_MAPS_KEY = (key || '').trim();
+  GOOGLE_MAPS_READY = false;
+  if (window.__googlePlacesPromise) {
+    window.__googlePlacesPromise = null;
+  }
+  return GOOGLE_MAPS_KEY;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Google Places API loader
+   ══════════════════════════════════════════════════════════ */
+
+function loadGooglePlaces() {
+  if (window.google && window.google.maps && window.google.maps.places) {
+    return Promise.resolve(window.google.maps);
+  }
+
+  if (!GOOGLE_MAPS_KEY) {
+    return Promise.reject(new Error('Google Maps API key is not configured.'));
+  }
+
+  if (window.__googlePlacesPromise) {
+    return window.__googlePlacesPromise;
+  }
+
+  window.__googlePlacesPromise = new Promise(function(resolve, reject) {
+    var script = document.createElement('script');
+
+    script.src =
+      'https://maps.googleapis.com/maps/api/js' +
+      '?key=' + encodeURIComponent(GOOGLE_MAPS_KEY) +
+      '&libraries=places' +
+      '&v=weekly';
+
+    script.async = true;
+    script.defer = true;
+
+    script.onload = function() {
+      GOOGLE_MAPS_READY = true;
+      if (window.google && window.google.maps) resolve(window.google.maps);
+      else reject(new Error('Google Maps JavaScript API loaded without maps object.'));
+    };
+
+    script.onerror = function() {
+      reject(new Error('Google Maps JavaScript API failed to load.'));
+    };
+
+    document.head.appendChild(script);
+  });
+
+  return window.__googlePlacesPromise;
+}
 
 /* ══════════════════════════════════════════════════════════
    BookingLocationModel
@@ -151,8 +208,9 @@ var DistanceService = (function() {
 
 /* ══════════════════════════════════════════════════════════
    LocationAutocomplete
-   Uber/Ola-style — Geoapify Places API
+   Google Places Autocomplete (New)
    ══════════════════════════════════════════════════════════ */
+
 function LocationAutocomplete(opts) {
   this.input    = document.getElementById(opts.inputId);
   this.hidden   = document.getElementById(opts.hiddenId);
@@ -160,362 +218,1017 @@ function LocationAutocomplete(opts) {
   this.onSelect = opts.onSelect || function() {};
   this.model    = new BookingLocationModel();
 
-  this._activeIdx  = -1;
-  this._debounceT  = null;
-  this._controller = null;
-  this._lastQuery  = '';
-  this._cache      = {}; // fresh cache — no stale entries
+  this._activeIdx = -1;
+  this._debounceT = null;
+  this._lastQuery = '';
 
-  if (this.input && this.hidden && this.suggest) this._bind();
+  if (this.input && this.hidden && this.suggest) {
+    this._bind();
+  }
 }
+
+
+/* ──────────────────────────────────────────────────────────
+   Bind input events
+   ────────────────────────────────────────────────────────── */
 
 LocationAutocomplete.prototype._bind = function() {
   var self = this;
 
-  this.input.addEventListener('input', function() {
+  self.input.addEventListener('input', function() {
     self.model.clear();
     self.hidden.value = '';
+
     var q = self.input.value.trim();
+
     clearTimeout(self._debounceT);
-    if (!q || q.length < 1) { self._hide(); return; }
-    self._debounceT = setTimeout(function() { self._search(q); }, 300);
+
+    if (!q || q.length < 2) {
+      self._hide();
+      return;
+    }
+
+    self._debounceT = setTimeout(function() {
+      self._search(q);
+    }, 300);
   });
 
-  this.input.addEventListener('focus', function() {
+
+  self.input.addEventListener('focus', function() {
     var q = self.input.value.trim();
-    if (q.length >= 2 && !self.model.isValid()) self._search(q);
+
+    if (q.length >= 2 && !self.model.isValid()) {
+      self._search(q);
+    }
   });
 
-  this.input.addEventListener('keydown', function(e) {
+
+  self.input.addEventListener('keydown', function(e) {
     var items = self.suggest.querySelectorAll('.loc-item');
-    if (!items.length || self.suggest.style.display === 'none') return;
+
+    if (!items.length ||
+        self.suggest.style.display === 'none') {
+      return;
+    }
+
     if (e.key === 'ArrowDown') {
+
       e.preventDefault();
-      self._activeIdx = Math.min(self._activeIdx + 1, items.length - 1);
+
+      self._activeIdx = Math.min(
+        self._activeIdx + 1,
+        items.length - 1
+      );
+
       self._highlight(items);
+
     } else if (e.key === 'ArrowUp') {
+
       e.preventDefault();
-      self._activeIdx = Math.max(self._activeIdx - 1, 0);
+
+      self._activeIdx = Math.max(
+        self._activeIdx - 1,
+        0
+      );
+
       self._highlight(items);
+
     } else if (e.key === 'Enter') {
-      if (self._activeIdx >= 0 && items[self._activeIdx]) {
+
+      if (
+        self._activeIdx >= 0 &&
+        items[self._activeIdx]
+      ) {
         e.preventDefault();
-        items[self._activeIdx].dispatchEvent(new MouseEvent('mousedown'));
+
+        items[self._activeIdx]
+          .dispatchEvent(new MouseEvent('mousedown'));
       }
+
     } else if (e.key === 'Escape') {
+
       self._hide();
     }
   });
 
+
   document.addEventListener('click', function(e) {
-    if (!self.input.contains(e.target) && !self.suggest.contains(e.target)) self._hide();
+    if (
+      !self.input.contains(e.target) &&
+      !self.suggest.contains(e.target)
+    ) {
+      self._hide();
+    }
   });
 };
 
-LocationAutocomplete.prototype._highlight = function(items) {
-  var idx = this._activeIdx;
-  [].forEach.call(items, function(li, i) { li.classList.toggle('active', i === idx); });
-  if (items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
-};
+
+/* ──────────────────────────────────────────────────────────
+   Google Places search
+   ────────────────────────────────────────────────────────── */
 
 LocationAutocomplete.prototype._search = function(q) {
-  var self = this;
-  self._lastQuery = q;
-  if (self._cache[q]) { self._render(self._cache[q]); return; }
-  self._showLoading();
-  if (self._controller) { try { self._controller.abort(); } catch(e) {} }
-  self._controller = new AbortController();
 
-  if (TOMTOM_KEY && TOMTOM_KEY !== 'YOUR_TOMTOM_API_KEY') {
-    self._tomtomSearch(q);
-  } else {
-    self._geoapifySearch(q);
+  var self = this;
+
+  self._lastQuery = q;
+
+  self._showLoading();
+
+  loadGooglePlaces()
+    .then(function() {
+
+      return self._googleSearch(q);
+
+    })
+    .catch(function(err) {
+
+      console.error(
+        'Google Places error:',
+        err
+      );
+
+      self._showEmpty();
+    });
+};
+
+
+/* ──────────────────────────────────────────────────────────
+   Google Places Autocomplete (New)
+   ────────────────────────────────────────────────────────── */
+
+LocationAutocomplete.prototype._googleSearch = async function(q) {
+
+  var self = this;
+
+  try {
+
+    /*
+     * Import the new Places library.
+     */
+    var placesLib =
+      await google.maps.importLibrary('places');
+
+    var PlaceAutocompleteElement =
+      placesLib.PlaceAutocompleteElement;
+
+
+    /*
+     * Create a temporary Google autocomplete element.
+     *
+     * We don't display this element.
+     * We use it only to obtain Google predictions.
+     */
+    var autocomplete =
+      new PlaceAutocompleteElement();
+
+
+    /*
+     * Restrict suggestions to India.
+     */
+    autocomplete.includedRegionCodes = ['in'];
+
+
+    /*
+     * Use the user's typed query.
+     */
+    autocomplete.value = q;
+
+
+    /*
+     * Listen for prediction selection.
+     *
+     * The actual visible dropdown is still OUR
+     * existing custom dropdown.
+     */
+    var container =
+      document.createElement('div');
+
+    container.style.display = 'none';
+
+    container.appendChild(autocomplete);
+
+    document.body.appendChild(container);
+
+
+    /*
+     * Google autocomplete widget handles
+     * prediction requests internally.
+     *
+     * Unfortunately, PlaceAutocompleteElement
+     * is a complete UI component and is not designed
+     * to expose arbitrary predictions directly.
+     *
+     * Therefore we use the Data API below instead.
+     */
+    container.remove();
+
+    await self._googleDataSearch(q);
+
+  } catch (err) {
+
+    console.error(
+      'Google Places search failed:',
+      err
+    );
+
+    self._showEmpty();
   }
 };
 
-/* TomTom Fuzzy Search — primary */
-LocationAutocomplete.prototype._tomtomSearch = function(q) {
+
+/* ──────────────────────────────────────────────────────────
+   Google Places Autocomplete Data API
+   Custom UI version
+   ────────────────────────────────────────────────────────── */
+
+LocationAutocomplete.prototype._googleDataSearch = async function(q) {
+
   var self = this;
-  var url = 'https://api.tomtom.com/search/2/search/' +
-    encodeURIComponent(q) + '.json?' +
-    'key=' + TOMTOM_KEY +
-    '&countrySet=IN' +
-    '&language=en-GB&limit=8&typeahead=true';
 
-  fetch(url, { signal: self._controller.signal })
-    .then(function(res) { if (!res.ok) throw new Error('TomTom ' + res.status); return res.json(); })
-    .then(function(data) {
-      var results = (data && data.results) ? data.results : [];
-      if (!results.length) { self._showEmpty(); return; }
-      var features = results.map(function(r) {
-        var addr = r.address || {};
-        var poi  = r.poi || {};
+  try {
 
-        /* Best display name — pick the most specific available */
-        var name = poi.name                          // POI like "Perambur Railway Station"
-          || addr.streetName                         // Street name
-          || addr.municipalitySubdivision            // Suburb/area like "Kolathur"
-          || addr.municipality                       // City like "Chennai"
-          || (addr.freeformAddress || '').split(',')[0];
+    var placesLib =
+      await google.maps.importLibrary('places');
 
-        var suburb = addr.municipalitySubdivision || '';
-        var city   = addr.municipality || '';
-        var state  = addr.countrySubdivision || '';
+    var AutocompleteSessionToken =
+      placesLib.AutocompleteSessionToken;
 
-        /* Context line: Suburb, City, State */
-        var parts = [];
-        if (suburb && suburb !== name) parts.push(suburb);
-        if (city   && city !== name && city !== suburb) parts.push(city);
-        if (state) parts.push(state);
-        var context = parts.join(', ');
+    var AutocompleteSuggestion =
+      placesLib.AutocompleteSuggestion;
 
-        var lat = r.position ? r.position.lat : '';
-        var lon = r.position ? r.position.lon : '';
 
-        return {
-          properties: {
-            name:          name,
-            address_line1: name,
-            address_line2: context,
-            city:          city || suburb,
-            state:         state,
-            country:       'India',
-            postcode:      addr.postalCode || '',
-            place_id:      r.id || '',
-            result_type:   r.type || (poi.name ? 'amenity' : 'locality'),
-          },
-          geometry: { coordinates: [parseFloat(lon)||0, parseFloat(lat)||0] },
-        };
-      });
-      self._cache[q] = features;
-      var keys = Object.keys(self._cache);
-      if (keys.length > 30) delete self._cache[keys[0]];
-      self._render(features);
-    })
-    .catch(function(err) {
-      if (err && err.name === 'AbortError') return;
-      self._geoapifySearch(q);
-    });
-};
+    /*
+     * Create a session token.
+     */
+    var sessionToken =
+      new AutocompleteSessionToken();
 
-/* Geoapify Search — secondary fallback */
-LocationAutocomplete.prototype._geoapifySearch = function(q) {
-  var self = this;
-  var url = 'https://api.geoapify.com/v1/geocode/autocomplete?' +
-    'text=' + encodeURIComponent(q) +
-    '&filter=countrycode:in' +
-    '&bias=proximity:80.2707,13.0827' +
-    '&limit=8&lang=en&apiKey=' + GEOAPIFY_KEY;
 
-  fetch(url, { signal: self._controller.signal })
-    .then(function(res) { if (!res.ok) throw new Error('Geoapify ' + res.status); return res.json(); })
-    .then(function(data) {
-      var features = (data && data.features) ? data.features : [];
-      if (features.length) {
-        self._cache[q] = features;
-        var keys = Object.keys(self._cache);
-        if (keys.length > 30) delete self._cache[keys[0]];
-        self._render(features);
-      } else {
-        self._nominatimFallback(q);
+    /*
+     * Build autocomplete request.
+     */
+    var request = {
+      input: q,
+
+      includedRegionCodes: ['in'],
+
+      sessionToken: sessionToken
+    };
+
+
+    /*
+     * Ask Google for predictions.
+     */
+    var response =
+      await AutocompleteSuggestion
+        .fetchAutocompleteSuggestions(request);
+
+
+    var suggestions =
+      response.suggestions || [];
+
+
+    if (!suggestions.length) {
+
+      self._showEmpty();
+
+      return;
+    }
+
+
+    /*
+     * Convert Google suggestions into the
+     * same structure expected by our renderer.
+     */
+    var features = suggestions.map(function(item) {
+
+      var prediction =
+        item.placePrediction;
+
+      if (!prediction) {
+        return null;
       }
-    })
-    .catch(function(err) {
-      if (err && err.name === 'AbortError') return;
-      self._nominatimFallback(q);
-    });
+
+
+      var text =
+        prediction.text || {};
+
+      var mainText =
+        text.text || '';
+
+
+      var secondaryText = '';
+
+      if (text.matches &&
+          text.matches.length) {
+
+        secondaryText =
+          mainText;
+      }
+
+
+      return {
+
+        googlePrediction: prediction,
+
+        properties: {
+
+          name: mainText,
+
+          address_line1: mainText,
+
+          address_line2:
+            secondaryText,
+
+          city: '',
+
+          state: '',
+
+          country: 'India',
+
+          postcode: '',
+
+          place_id:
+            prediction.placeId || '',
+
+          result_type:
+            'google-place'
+        },
+
+        geometry: {
+
+          coordinates: [0, 0]
+
+        }
+
+      };
+
+    }).filter(Boolean);
+
+
+    self._render(features);
+
+  } catch (err) {
+
+    console.error(
+      'Google Autocomplete Data API error:',
+      err
+    );
+
+    self._showEmpty();
+  }
 };
 
-/* Nominatim fallback when Geoapify fails */
-LocationAutocomplete.prototype._nominatimFallback = function(q) {
-  var self = this;
-  var url = 'https://nominatim.openstreetmap.org/search?' +
-    'q=' + encodeURIComponent(q) +
-    '&countrycodes=in&addressdetails=1&limit=8&format=json&accept-language=en';
 
-  fetch(url, { headers: { 'Accept-Language': 'en' } })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (!data || !data.length) { self._showEmpty(); return; }
-      var features = data.map(function(p) {
-        var addr = p.address || {};
-        var name = p.display_name.split(',')[0];
-        var rest = p.display_name.split(',').slice(1,4).join(',').trim();
-        return {
-          properties: {
-            formatted:     p.display_name,
-            name:          name,
-            address_line1: name,
-            address_line2: rest,
-            city:          addr.city || addr.town || addr.village || addr.county || '',
-            state:         addr.state || '',
-            country:       'India',
-            postcode:      addr.postcode || '',
-            place_id:      'osm:' + (p.osm_type||'N') + ':' + (p.osm_id||''),
-            result_type:   p.type || p.class || 'unknown',
-          },
-          geometry: { coordinates: [parseFloat(p.lon)||0, parseFloat(p.lat)||0] },
-        };
-      });
-      self._render(features);
-    })
-    .catch(function() { self._showEmpty(); });
-};
+/* ──────────────────────────────────────────────────────────
+   Render Google suggestions
+   ────────────────────────────────────────────────────────── */
 
 LocationAutocomplete.prototype._render = function(features) {
+
   var self = this;
+
   self.suggest.innerHTML = '';
+
   self._activeIdx = -1;
-  if (!features || !features.length) { self._hide(); return; }
 
-  features.forEach(function(f) {
-    var p = f.properties || {};
 
-    /* Place name — just the locality/area name, not full address */
-    var name = p.name || p.address_line1 || (p.formatted || '').split(',')[0];
+  if (!features || !features.length) {
 
-    /* Context — City, State (like "Chennai, Tamil Nadu") */
-    var city  = p.city || p.county || p.state_district || '';
-    var state = p.state || '';
-    var context = '';
-    if (city && state && city !== state) context = city + ', ' + state;
-    else if (state) context = state;
-    else if (city)  context = city;
+    self._hide();
 
-    var li = document.createElement('li');
-    li.className = 'loc-item';
-    li.setAttribute('role', 'option');
-    li.innerHTML =
-      '<span class="loc-item-pin"><i class="fas fa-map-marker-alt"></i></span>' +
-      '<span class="loc-item-body">' +
-        '<span class="loc-item-name">' + self._hl(name) + '</span>' +
-        (context ? ' <span class="loc-item-context">' + context + '</span>' : '') +
-      '</span>';
-
-    li.addEventListener('mousedown', function(e) {
-      e.preventDefault();
-      self._select(f, name);
-    });
-    self.suggest.appendChild(li);
-  });
-
-  self.suggest.style.display = 'block';
-};
-
-LocationAutocomplete.prototype._icon = function(type, name) {
-  var t = (type + ' ' + (name || '')).toLowerCase();
-  if (/airport|aerodrome/.test(t))                          return 'fa-plane';
-  if (/railway station|train station|junction/.test(t))     return 'fa-train';
-  if (/metro|mrts|rapid transit/.test(t))                   return 'fa-subway';
-  if (/bus.?stop|bus.?stand|bus.?depot|omni/.test(t))       return 'fa-bus';
-  if (/hospital|clinic|medical|health/.test(t))             return 'fa-hospital';
-  if (/school|college|university|institute/.test(t))        return 'fa-graduation-cap';
-  if (/hotel|resort|lodge|inn/.test(t))                     return 'fa-hotel';
-  if (/street|road|salai|main road|cross/.test(t))          return 'fa-road';
-  if (/suburb|locality|nagar|puram|pet|ur$|ar$/.test(t))   return 'fa-map-pin';
-  if (/city|town|district|municipality|ward/.test(t))       return 'fa-city';
-  return 'fa-map-marker-alt';
-};
-
-LocationAutocomplete.prototype._hl = function(text) {
-  if (!this._lastQuery || !text) return text;
-  try {
-    var safe = this._lastQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return text.replace(new RegExp('(' + safe + ')', 'gi'), '<strong>$1</strong>');
-  } catch(e) { return text; }
-};
-
-LocationAutocomplete.prototype._select = function(feature, displayName) {
-  var self  = this;
-  var model = new BookingLocationModel();
-  model.fromGeoapify(feature);
-
-  /* Show clean name in input */
-  self.input.value  = displayName || model.city || (model.address.split(',')[0]);
-  /* Store city for static distance table lookup */
-  self.hidden.value = model.city || self.input.value;
-  self.model        = model;
-
-  self._hide();
-
-  /* Clear errors */
-  self.input.classList.remove('loc-error');
-  self.input.style.borderColor = '';
-  self.input.style.boxShadow   = '';
-  var wrap = self.input.closest('.loc-autocomplete-wrap');
-  if (wrap && wrap.parentElement) {
-    var err = wrap.parentElement.querySelector('.loc-err-msg');
-    if (err) err.remove();
+    return;
   }
 
-  /* Fire callback with full model (has lat/lon) */
-  self.onSelect(model);
-  /* Also fire change on hidden input */
-  self.hidden.dispatchEvent(new Event('change'));
+
+  features.forEach(function(f) {
+
+    var p =
+      f.properties || {};
+
+
+    var name =
+      p.name ||
+      p.address_line1 ||
+      '';
+
+
+    var context =
+      p.address_line2 || '';
+
+
+    var li =
+      document.createElement('li');
+
+
+    li.className =
+      'loc-item';
+
+
+    li.setAttribute(
+      'role',
+      'option'
+    );
+
+
+    li.innerHTML =
+
+      '<span class="loc-item-pin">' +
+
+        '<i class="fas fa-map-marker-alt"></i>' +
+
+      '</span>' +
+
+      '<span class="loc-item-body">' +
+
+        '<span class="loc-item-name">' +
+
+          self._hl(name) +
+
+        '</span>' +
+
+        (
+          context
+
+            ? ' <span class="loc-item-context">' +
+                self._hl(context) +
+              '</span>'
+
+            : ''
+        ) +
+
+      '</span>';
+
+
+    li.addEventListener(
+      'mousedown',
+      function(e) {
+
+        e.preventDefault();
+
+        self._selectGoogle(
+          f
+        );
+
+      }
+    );
+
+
+    self.suggest.appendChild(li);
+
+  });
+
+
+  self.suggest.style.display =
+    'block';
 };
+
+
+/* ──────────────────────────────────────────────────────────
+   Select Google place
+   ────────────────────────────────────────────────────────── */
+
+LocationAutocomplete.prototype._selectGoogle = async function(feature) {
+
+  var self = this;
+
+  var prediction =
+    feature.googlePrediction;
+
+
+  if (!prediction) {
+    return;
+  }
+
+
+  try {
+
+    self._showLoading();
+
+
+    /*
+     * Convert prediction to Place.
+     */
+    var place =
+      prediction.toPlace();
+
+
+    /*
+     * Fetch only the fields we actually need.
+     */
+    await place.fetchFields({
+
+      fields: [
+        'id',
+        'displayName',
+        'formattedAddress',
+        'location',
+        'addressComponents'
+      ]
+
+    });
+
+
+    /*
+     * Build our existing BookingLocationModel.
+     */
+    var model =
+      new BookingLocationModel();
+
+
+    model.placeId =
+      place.id || '';
+
+
+    model.address =
+      place.formattedAddress ||
+      place.displayName ||
+      '';
+
+
+    if (place.location) {
+
+      model.latitude =
+        String(place.location.lat());
+
+      model.longitude =
+        String(place.location.lng());
+
+    }
+
+
+    model.country =
+      'India';
+
+
+    /*
+     * Read address components.
+     */
+    var components =
+      place.addressComponents || [];
+
+
+    components.forEach(function(component) {
+
+      var types =
+        component.types || [];
+
+      var value =
+        component.longText ||
+        component.shortText ||
+        '';
+
+
+      if (
+        types.indexOf(
+          'locality'
+        ) !== -1
+      ) {
+
+        model.city = value;
+
+      } else if (
+        types.indexOf(
+          'administrative_area_level_2'
+        ) !== -1 &&
+        !model.city
+      ) {
+
+        model.city = value;
+
+      } else if (
+        types.indexOf(
+          'administrative_area_level_1'
+        ) !== -1
+      ) {
+
+        model.state = value;
+
+      } else if (
+        types.indexOf(
+          'country'
+        ) !== -1
+      ) {
+
+        model.country = value;
+
+      } else if (
+        types.indexOf(
+          'postal_code'
+        ) !== -1
+      ) {
+
+        model.postalCode = value;
+
+      }
+
+    });
+
+
+    /*
+     * Mark location as confirmed only when
+     * Google returned valid coordinates.
+     */
+    model.confirmed =
+      model.latitude !== '' &&
+      model.longitude !== '';
+
+
+    /*
+     * Display clean Google place name.
+     */
+    self.input.value =
+      place.displayName ||
+      place.formattedAddress ||
+      '';
+
+
+    /*
+     * Existing hidden field.
+     *
+     * We store the city here because your
+     * existing code uses it for static-distance
+     * lookup.
+     */
+    self.hidden.value =
+      model.city ||
+      self.input.value;
+
+
+    self.model =
+      model;
+
+
+    self._hide();
+
+
+    /*
+     * Clear existing errors.
+     */
+    self.input.classList.remove(
+      'loc-error'
+    );
+
+    self.input.style.borderColor =
+      '';
+
+    self.input.style.boxShadow =
+      '';
+
+
+    var wrap =
+      self.input.closest(
+        '.loc-autocomplete-wrap'
+      );
+
+
+    if (
+      wrap &&
+      wrap.parentElement
+    ) {
+
+      var err =
+        wrap.parentElement.querySelector(
+          '.loc-err-msg'
+        );
+
+      if (err) {
+        err.remove();
+      }
+
+    }
+
+
+    /*
+     * Existing callback.
+     *
+     * Your pickup/drop code can continue
+     * using this without modification.
+     */
+    self.onSelect(model);
+
+
+    /*
+     * Existing hidden input event.
+     */
+    self.hidden.dispatchEvent(
+      new Event('change')
+    );
+
+
+  } catch (err) {
+
+    console.error(
+      'Google Place Details error:',
+      err
+    );
+
+    self._showEmpty();
+  }
+};
+
+
+/* ──────────────────────────────────────────────────────────
+   Keyboard highlighting
+   ────────────────────────────────────────────────────────── */
+
+LocationAutocomplete.prototype._highlight = function(items) {
+
+  var idx =
+    this._activeIdx;
+
+
+  [].forEach.call(
+    items,
+    function(li, i) {
+
+      li.classList.toggle(
+        'active',
+        i === idx
+      );
+
+    }
+  );
+
+
+  if (items[idx]) {
+
+    items[idx].scrollIntoView({
+      block: 'nearest'
+    });
+
+  }
+};
+
+
+/* ──────────────────────────────────────────────────────────
+   Highlight search text
+   ────────────────────────────────────────────────────────── */
+
+LocationAutocomplete.prototype._hl = function(text) {
+
+  if (
+    !this._lastQuery ||
+    !text
+  ) {
+    return text;
+  }
+
+
+  try {
+
+    var safe =
+      this._lastQuery.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&'
+      );
+
+
+    return text.replace(
+      new RegExp(
+        '(' + safe + ')',
+        'gi'
+      ),
+      '<strong>$1</strong>'
+    );
+
+  } catch(e) {
+
+    return text;
+  }
+};
+
+
+/* ──────────────────────────────────────────────────────────
+   Loading state
+   ────────────────────────────────────────────────────────── */
 
 LocationAutocomplete.prototype._showLoading = function() {
+
   this.suggest.innerHTML =
-    '<li class="loc-state"><i class="fas fa-circle-notch fa-spin"></i> Searching…</li>';
-  this.suggest.style.display = 'block';
+
+    '<li class="loc-state">' +
+
+      '<i class="fas fa-circle-notch fa-spin"></i> ' +
+
+      'Searching Google Maps…' +
+
+    '</li>';
+
+
+  this.suggest.style.display =
+    'block';
 };
+
+
+/* ──────────────────────────────────────────────────────────
+   Empty state
+   ────────────────────────────────────────────────────────── */
 
 LocationAutocomplete.prototype._showEmpty = function() {
+
   this.suggest.innerHTML =
-    '<li class="loc-state loc-empty"><i class="fas fa-search"></i> No locations found</li>';
-  this.suggest.style.display = 'block';
+
+    '<li class="loc-state loc-empty">' +
+
+      '<i class="fas fa-search"></i> ' +
+
+      'No locations found' +
+
+    '</li>';
+
+
+  this.suggest.style.display =
+    'block';
 };
+
+
+/* ──────────────────────────────────────────────────────────
+   Hide suggestions
+   ────────────────────────────────────────────────────────── */
 
 LocationAutocomplete.prototype._hide = function() {
-  this.suggest.style.display = 'none';
-  this.suggest.innerHTML = '';
-  this._activeIdx = -1;
+
+  this.suggest.style.display =
+    'none';
+
+  this.suggest.innerHTML =
+    '';
+
+  this._activeIdx =
+    -1;
 };
 
+
+/* ──────────────────────────────────────────────────────────
+   Clear
+   ────────────────────────────────────────────────────────── */
+
 LocationAutocomplete.prototype.clear = function() {
-  this.input.value  = '';
-  this.hidden.value = '';
+
+  this.input.value =
+    '';
+
+  this.hidden.value =
+    '';
+
   this.model.clear();
+
   this._hide();
 };
 
+
+/* ──────────────────────────────────────────────────────────
+   Validation
+   ────────────────────────────────────────────────────────── */
+
 LocationAutocomplete.prototype.isValid = function() {
+
   return this.model.isValid();
 };
 
+
+/* ──────────────────────────────────────────────────────────
+   Show error
+   ────────────────────────────────────────────────────────── */
+
 LocationAutocomplete.prototype.showError = function(msg) {
-  this.input.classList.add('loc-error');
-  this.input.style.borderColor = '#EF4444';
-  this.input.style.boxShadow   = '0 0 0 3px rgba(239,68,68,.15)';
-  var wrap = this.input.closest('.loc-autocomplete-wrap');
-  var parent = wrap ? wrap.parentElement : null;
-  if (!parent) return;
-  var old = parent.querySelector('.loc-err-msg');
-  if (old) old.remove();
-  var s = document.createElement('span');
-  s.className = 'loc-err-msg';
-  s.setAttribute('role', 'alert');
-  s.style.cssText = 'font-size:.72rem;color:#EF4444;margin-top:3px;display:block;';
-  s.textContent = msg;
+
+  this.input.classList.add(
+    'loc-error'
+  );
+
+  this.input.style.borderColor =
+    '#EF4444';
+
+  this.input.style.boxShadow =
+    '0 0 0 3px rgba(239,68,68,.15)';
+
+
+  var wrap =
+    this.input.closest(
+      '.loc-autocomplete-wrap'
+    );
+
+
+  var parent =
+    wrap
+      ? wrap.parentElement
+      : null;
+
+
+  if (!parent) {
+    return;
+  }
+
+
+  var old =
+    parent.querySelector(
+      '.loc-err-msg'
+    );
+
+
+  if (old) {
+    old.remove();
+  }
+
+
+  var s =
+    document.createElement(
+      'span'
+    );
+
+
+  s.className =
+    'loc-err-msg';
+
+
+  s.setAttribute(
+    'role',
+    'alert'
+  );
+
+
+  s.style.cssText =
+    'font-size:.72rem;' +
+    'color:#EF4444;' +
+    'margin-top:3px;' +
+    'display:block;';
+
+
+  s.textContent =
+    msg;
+
+
   parent.appendChild(s);
 };
 
+
+/* ──────────────────────────────────────────────────────────
+   Clear error
+   ────────────────────────────────────────────────────────── */
+
 LocationAutocomplete.prototype.clearError = function() {
-  this.input.classList.remove('loc-error');
-  this.input.style.borderColor = '';
-  this.input.style.boxShadow   = '';
-  var wrap = this.input.closest('.loc-autocomplete-wrap');
-  if (wrap && wrap.parentElement) {
-    var err = wrap.parentElement.querySelector('.loc-err-msg');
-    if (err) err.remove();
+
+  this.input.classList.remove(
+    'loc-error'
+  );
+
+  this.input.style.borderColor =
+    '';
+
+  this.input.style.boxShadow =
+    '';
+
+
+  var wrap =
+    this.input.closest(
+      '.loc-autocomplete-wrap'
+    );
+
+
+  if (
+    wrap &&
+    wrap.parentElement
+  ) {
+
+    var err =
+      wrap.parentElement.querySelector(
+        '.loc-err-msg'
+      );
+
+
+    if (err) {
+      err.remove();
+    }
+
   }
 };
 
-/* ── Export ──────────────────────────────────────────────*/
+
+/* ──────────────────────────────────────────────────────────
+   Export
+   ────────────────────────────────────────────────────────── */
+
 window.SundaraLocation = {
-  BookingLocationModel: BookingLocationModel,
-  LocationAutocomplete: LocationAutocomplete,
-  DistanceService:      DistanceService,
-  setApiKey:    function(key) { GEOAPIFY_KEY = key; },
-  setTomTomKey: function(key) { TOMTOM_KEY = key; },
+
+  BookingLocationModel:
+    BookingLocationModel,
+
+  LocationAutocomplete:
+    LocationAutocomplete,
+
+  DistanceService:
+    DistanceService,
+
+  setGoogleMapsKey:
+    setGoogleMapsKey,
+
+  loadGooglePlaces:
+    loadGooglePlaces,
+
+  loadGoogleMaps:
+    loadGooglePlaces
+
 };

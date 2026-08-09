@@ -1,6 +1,11 @@
 ﻿/**
  * server.js – Sundara Travels Express API
  */
+
+const dns = require("dns");
+
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
+
 'use strict';
 require('dotenv').config();
 
@@ -62,6 +67,15 @@ app.get('/api/health', async (req, res) => {
     db: states[mongoose.connection.readyState] || 'unknown',
     dbState: mongoose.connection.readyState,
     smtp: { host: process.env.SMTP_HOST, user: process.env.SMTP_USER, from: process.env.MAIL_FROM, adminNotify: process.env.ADMIN_NOTIFY_EMAIL },
+  });
+});
+
+app.get('/api/config/public', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+    },
   });
 });
 
