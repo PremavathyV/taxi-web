@@ -363,38 +363,35 @@ h1,h2,h3,h4,h5,h6 { font-family: var(--font-heading); font-weight: 700; }
   color: #fff !important;
 }
 
-/* Navbar call icon (between logo and hamburger) */
-.navbar-call-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px; height: 38px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.9rem;
-  text-decoration: none;
+/* Navbar call button — icon only, same style on all screens */
+.nav-call-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 0.88rem; text-decoration: none;
   transition: var(--transition);
-  flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(249,115,22,0.4);
   animation: callPulse 2s ease-in-out infinite;
 }
+.nav-call-btn:hover { background: var(--accent-dark); transform: scale(1.1); color: #fff; }
+
+/* Mobile call icon (outside collapse) */
+.navbar-call-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 0.88rem; text-decoration: none;
+  transition: var(--transition); flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(249,115,22,0.4);
+  animation: callPulse 2s ease-in-out infinite;
+  order: 2; margin-left: auto; margin-right: 10px;
+}
 .navbar-call-icon:hover { background: var(--accent-dark); transform: scale(1.1); color: #fff; }
+.navbar-toggler { order: 3 !important; }
+
 @keyframes callPulse {
   0%,100% { box-shadow: 0 4px 12px rgba(249,115,22,0.4); }
-  50%      { box-shadow: 0 4px 20px rgba(249,115,22,0.7); }
-}
-/* On desktop — also show in the collapse area (already added via nav-call-btn) */
-@media (min-width: 992px) {
-  .navbar-call-icon { display: none; }  /* Hide small one on desktop, use nav-call-btn instead */
-}
-@media (max-width: 991px) {
-  /* On mobile: position it between logo and hamburger */
-  .navbar-brand      { order: 1; }
-  .navbar-call-icon  { order: 2; margin-left: auto; margin-right: 12px; }
-  .navbar-toggler    { order: 3; margin-left: 0; }
-  .navbar > .container,
-  .navbar > .container-fluid { flex-wrap: nowrap; }
+  50%      { box-shadow: 0 4px 22px rgba(249,115,22,0.7); }
 }
 .navbar-toggler { border: none; padding: 8px; background: transparent; }
 .toggler-icon { display: flex; flex-direction: column; gap: 5px; width: 24px; }
