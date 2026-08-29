@@ -118,7 +118,6 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
     const dateVal    = fDate.value;
     const timeVal    = fTime.value;
     const messageVal = fMessage?.value.trim() || '';
-    const routeMeta = window._currentRouteMeta || null;
 
     const dateObj       = new Date(dateVal + 'T00:00:00');
     const formattedDate = dateObj.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
@@ -136,19 +135,15 @@ function todayStr()        { return new Date().toISOString().split('T')[0]; }
           pickup: pickupVal, drop: dropVal,
           journeyDate: dateVal, pickupTime: timeVal,
           vehicleType: vehicleVal,
-          estimatedDistanceKm: routeMeta && routeMeta.distanceKm ? routeMeta.distanceKm : undefined,
-          estimatedTravelTimeMin: routeMeta && routeMeta.durationInTrafficSec ? Math.round(routeMeta.durationInTrafficSec / 60) : undefined,
-          routeMeta: routeMeta,
+          estimatedDistanceKm: window._currentDistKm || undefined,
           specialInstructions: messageVal,
         }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.message || 'Booking failed.');
+      if (!res.ok) console.warn('Booking API:', result.message);
     } catch (err) {
-      submitBtn.querySelector('.wbBtn-inner').innerHTML = origInner;
-      submitBtn.disabled = false; busy = false;
-      showToastMsg('❌ ' + (err.message || 'Network error. Please try again.'));
-      return;
+      // API failed — log it but still proceed to WhatsApp
+      console.warn('API error (non-blocking):', err.message);
     }
     // Google Ads Conversion Tracking
 if (window.gtag) {
