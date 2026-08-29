@@ -5,7 +5,9 @@
  */
 'use strict';
 
-const API_BASE = 'https://taxi-web-mrk9.onrender.com';
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? ''   // local: relative URL (same server)
+  : 'https://taxi-web-mrk9.onrender.com';
 
 function showToastMsg(msg) { if (window.showToast) window.showToast(msg); }
 function todayStr()        { return new Date().toISOString().split('T')[0]; }
@@ -170,7 +172,29 @@ if (window.gtag) {
     if (overlay) { overlay.removeAttribute('hidden'); void overlay.offsetWidth; overlay.classList.add('wb-overlay-in'); }
     showToastMsg('✅ Booking confirmed! Opening WhatsApp…');
 
-    /* Build WhatsApp message */
+    /* Build WhatsApp message with fare details */
+    const distKm  = window._currentDistKm || '';
+    const tripType = document.getElementById('wbTripType')?.value || 'one_way';
+    const RATES   = { 'Sedan':{oneWay:15,roundTrip:14,bata:400,min:1000}, 'SUV':{oneWay:20,roundTrip:18,bata:500,min:1400}, 'Innova':{oneWay:21,roundTrip:19,bata:500,min:1600} };
+    let fareLines = [];
+    if (distKm && vehicleVal && RATES[vehicleVal]) {
+      const r = RATES[vehicleVal], isRT = tripType === 'round_trip';
+      const rate = isRT ? r.roundTrip : r.oneWay;
+      const totalDist = isRT ? distKm * 2 : distKm;
+      const base  = Math.max(totalDist * rate, r.min);
+      const grand = base + r.bata;
+      fareLines = [
+        '',
+        '💰 *FARE ESTIMATE*',
+        `🛣 *Distance:*   ${totalDist} km${isRT ? ' (both ways)' : ''}`,
+        `💵 *Rate/km:*    ₹${rate}`,
+        `🧾 *Base Fare:*  ₹${base.toLocaleString('en-IN')}`,
+        `👨‍✈️ *Driver Bata:* ₹${r.bata}`,
+        `✅ *Total:*      ₹${grand.toLocaleString('en-IN')}`,
+        '_Toll, parking & permit charges extra_',
+      ];
+    }
+
     const msg = [
       '🚕 *SUNDARA TRAVELS – Booking Request*', '',
       `👤 *Name:*      ${nameVal}`,
@@ -182,6 +206,7 @@ if (window.gtag) {
       `🕐 *Time:*      ${formattedTime}`,
       `🚗 *Vehicle:*   ${vehicleVal}`,
       messageVal ? `💬 *Message:*   ${messageVal}` : '',
+      ...fareLines,
       '', '✅ Please confirm availability.',
     ].filter(l => l !== '').join('\n');
 
