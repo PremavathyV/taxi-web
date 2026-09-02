@@ -447,25 +447,13 @@ if (window.gtag) {
   function updateDistBar(distKm, durText, source, trafficText) {
     const bar   = document.getElementById('locDistBar');
     const kmEl  = document.getElementById('locDistKm');
-    const durEl = document.getElementById('locDistDur');
-    const trafficEl = document.getElementById('locDistTraffic');
     const srcEl = document.getElementById('locDistSrc');
     if (!bar) return;
     if (!distKm) {
       bar.style.display = 'none';
-      if (trafficEl) trafficEl.style.display = 'none';
       return;
     }
     kmEl.innerHTML  = `<i class="fas fa-road"></i> <strong>${distKm} km</strong>`;
-    durEl.innerHTML = `<i class="fas fa-clock"></i> <strong>${durText}</strong>`;
-    if (trafficEl) {
-      if (trafficText) {
-        trafficEl.innerHTML = `<i class="fas fa-car"></i> <strong>${trafficText}</strong>`;
-        trafficEl.style.display = 'inline-flex';
-      } else {
-        trafficEl.style.display = 'none';
-      }
-    }
     if (srcEl) {
       if (source === 'google') srcEl.textContent = '· live road estimate';
       else if (source === 'osrm') srcEl.textContent = '· road estimate';
